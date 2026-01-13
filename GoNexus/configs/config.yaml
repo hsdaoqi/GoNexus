@@ -1,0 +1,26 @@
+server:
+  port: 8080
+  mode: debug # 开发环境用 debug，生产环境用 release
+
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+  username: "gonexus"
+  password: ""
+  dbname: "gonexus"
+
+jwt:
+  secret: "GoNexus-Secret-Key-985" # 生产环境这个要很复杂
+  expire: 72 # 过期时间，单位小时
+
+upload:
+  type: "oss"
+  #本地存储路径(如果是local)
+  path: "./xxx/upload/"
+  #OSS配置
+  oss:
+    endpoint: "oss-cn-shanghai.aliyuncs.com"
+    access_key: ""
+    secret_key: ""
+    bucket: "daoqi"
+    domain: "https://daoqi.oss-cn-shanghai.aliyuncs.com"

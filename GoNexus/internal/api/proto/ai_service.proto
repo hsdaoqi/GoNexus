@@ -1,0 +1,52 @@
+syntax = "proto3";
+//protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative ./internal/api/proto/ai_service.proto
+package proto;
+
+option go_package = "./;proto";
+
+// 定义服务：Go 可以调用的 Python 方法
+service AIService {
+  // 1. 同步消息 (Go -> Python 记笔记)
+  rpc SyncMessage (SyncRequest) returns (SyncResponse);
+
+  // 2. 智能总结 (Go -> Python 求总结)
+  rpc ChatSummary (SummaryRequest) returns (SummaryResponse);
+
+  // 3. 语义搜索 (Go -> Python 问问题)
+  rpc SemanticSearch (SearchRequest) returns (SearchResponse);
+}
+
+// --- 数据结构 ---
+
+message SyncRequest {
+  uint32 user_id = 1;
+  string content = 2;
+  string msg_id = 3;
+  string nickname = 4;//昵称
+  string session_id = 5; // 会话ID (例如 "p_1_2" 或 "g_100")
+}
+
+message SyncResponse {
+  int32 code = 1;
+}
+
+message SummaryRequest {
+  string request_id = 1;
+  repeated string chats = 2;
+}
+
+message SummaryResponse {
+  int32 code = 1;
+  string summary = 2;
+}
+
+message SearchRequest {
+  string query = 1;
+  int32 limit = 2;
+  string session_id = 3; // 只在这个会话里搜
+}
+
+message SearchResponse {
+  int32 code = 1;
+  string answer = 2;
+}

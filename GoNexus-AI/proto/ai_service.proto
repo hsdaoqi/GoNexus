@@ -1,0 +1,43 @@
+syntax = "proto3";
+package proto;
+option go_package = "./;proto";
+//python -m grpc_tools.protoc -I./proto --python_out=./proto --grpc_python_out=./proto ./proto/ai_service.proto
+
+service AIService {
+  rpc SyncMessage (SyncRequest) returns (SyncResponse);
+  rpc ChatSummary (SummaryRequest) returns (SummaryResponse);
+  rpc SemanticSearch (SearchRequest) returns (SearchResponse);
+}
+
+message SyncRequest {
+  uint32 user_id = 1;
+  string content = 2;
+  string msg_id = 3;
+  string nickname = 4; // 包含昵称
+  string session_id = 5; //会话ID (例如 "p_1_2" 或 "g_100")
+}
+
+message SyncResponse {
+  int32 code = 1;
+}
+
+message SummaryRequest {
+  string request_id = 1;
+  repeated string chats = 2;
+}
+
+message SummaryResponse {
+  int32 code = 1;
+  string summary = 2;
+}
+
+message SearchRequest {
+  string query = 1;
+  int32 limit = 2;
+  string session_id = 3; //只在这个会话里搜
+}
+
+message SearchResponse {
+  int32 code = 1;
+  string answer = 2;
+}
