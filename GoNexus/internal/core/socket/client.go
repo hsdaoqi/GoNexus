@@ -2,15 +2,14 @@ package socket
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
-	"go-nexus/internal/core"
 	"go-nexus/internal/model/dto"
 	"go-nexus/pkg/utils"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 // --- 配置常量 (复试考点：系统调优) ---
@@ -87,15 +86,8 @@ func (c *Client) ReadPump() {
 		// 🔥 [核心代码]：将消息投喂给 AI
 		// ==========================================
 		// 只有文本消息才存 RAG，图片/语音暂时不存
-		if proto.Type == dto.TypeText {
-			// 生成一个简单的唯一ID (实际项目可以用 UUID)
-			msgID := strconv.FormatInt(time.Now().UnixNano(), 10)
-			nickname := proto.SenderNickname
-			//计算SessionID
-			sessionID := core.GetSessionID(proto.ChatType, c.ID, proto.ToUserID)
-			// 异步发送 (go func)，绝对不能阻塞聊天主线程！
-			core.AsyncSyncMessage(c.ID, proto.Content, msgID, nickname, sessionID)
-		}
+		// ⚠️ 修改：移到 service.SaveMessage 之后，确保 ID 一致
+
 		// 4. 【安全关键】强制绑定发送者 ID
 		// 无论前端传什么 from_user_id，都覆盖为当前连接的 ID
 		// 防止黑客拿 A 的 Token 连上来，却发包说自己是 B

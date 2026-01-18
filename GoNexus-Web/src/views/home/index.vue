@@ -112,11 +112,11 @@
   
           <!-- 快捷操作 -->
           <div class="widget-box">
-            <div class="widget-title">⚡ 快捷操作</div>
+          <div class="widget-title">⚡ 快捷操作</div>
             <div class="quick-actions">
-              <button class="action-btn" @click="router.push('/chat')">
+            <button class="action-btn" @click="createVisible = true">
                 <el-icon><Plus /></el-icon> 创建群组
-              </button>
+            </button>
               <button class="action-btn outline" @click="router.push('/chat')">
                 <el-icon><Search /></el-icon> 查找好友
               </button>
@@ -125,17 +125,40 @@
         </div>
       </div>
     </div>
+
+    <!-- 创建群组弹窗 -->
+<el-dialog v-model="createVisible" title="创建新群组" width="400px" align-center>
+  <el-form :model="createForm" label-position="top">
+    <el-form-item label="群名称">
+      <el-input v-model="createForm.name" placeholder="例如：周末开黑小队" />
+    </el-form-item>
+    <el-form-item label="群公告 (可选)">
+      <el-input v-model="createForm.notice" type="textarea" placeholder="介绍一下这个群..." />
+    </el-form-item>
+    <el-form-item label="群头像 (可选)">
+      <input type="file" accept="image/*" @change="onCreateAvatarSelect" />
+    </el-form-item>
+  </el-form>
+  <template #footer>
+    <el-button @click="createVisible = false">取消</el-button>
+    <el-button type="primary" @click="handleCreateGroup">立即创建</el-button>
+  </template>
+</el-dialog>
   </template>
   
   <script setup lang="ts">
-  import { ref, onMounted, onUnmounted } from 'vue'
+  import { ref, reactive, onMounted, onUnmounted } from 'vue'
   import { useRouter } from 'vue-router'
   import { Connection, MagicStick, ArrowRight, ChatDotRound, User, Plus, Search } from '@element-plus/icons-vue'
   import { useUserStore } from '../../store/user'
   import { useFriendStore } from '../../store/friend'
   import { askAI } from '../../api/chat'
-  import { ElMessage } from 'element-plus'
-  
+  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { createGroup } from '../../api/group'
+  import { uploadFile } from '../../api/file'
+  const createVisible = ref(false)
+  const createForm = reactive({ name: '', notice: '', avatar: '' })
+  const createAvatarFile = ref<File | null>(null)
   const router = useRouter()
   const userStore = useUserStore()
   const friendStore = useFriendStore()
@@ -154,16 +177,58 @@
     friendStore.stopStatusPolling()
   })
   
-  const handleQuickAsk = async () => {
-    if (!quickQuery.value) return
-    const loadingMsg = ElMessage.info('AI 正在思考中...')
-    try {
-      const res: any = await askAI(quickQuery.value)
-      aiResponse.value = res.answer
-      loadingMsg.close()
-    } catch (e) {
-      ElMessage.error('AI 服务暂时不可用')
+  const onCreateAvatarSelect = (e: Event) => {
+    const file = (e.target as HTMLInputElement).files?.[0] || null
+    if (file && !file.type.startsWith('image/')) {
+      ElMessage.error('请选择图片文件')
+      return
     }
+    createAvatarFile.value = file
+  }
+  
+  const handleCreateGroup = async () => {
+    if (!createForm.name) {
+      ElMessage.warning('请输入群名称')
+      return
+    }
+    try {
+      if (createAvatarFile.value) {
+        const fd = new FormData()
+        fd.append('file', createAvatarFile.value)
+        const res: any = await uploadFile(fd)
+        createForm.avatar = res.url
+      }
+      await createGroup(createForm)
+      ElMessage.success('群组创建成功！')
+      createVisible.value = false
+      const { name, notice, avatar } = createForm
+      createForm.name = ''
+      createForm.notice = ''
+      createForm.avatar = ''
+      createAvatarFile.value = null
+      await ElMessageBox.confirm('创建成功，是否立即进入群聊？', '提示', {
+        confirmButtonText: '进入群聊',
+        cancelButtonText: '稍后再说',
+        type: 'info'
+      }).then(() => {
+        router.push('/chat')
+      }).catch(() => {
+        createForm.name = name
+        createForm.notice = notice
+        createForm.avatar = avatar
+      })
+    } catch (e) {}
+  }
+  const handleQuickAsk = async () => {
+    // if (!quickQuery.value) return
+    // const loadingMsg = ElMessage.info('AI 正在思考中...')
+    // try {
+    //   const res: any = await askAI(quickQuery.value,)
+    //   aiResponse.value = res.answer
+    //   loadingMsg.close()
+    // } catch (e) {
+    //   ElMessage.error('AI 服务暂时不可用')
+    // }
   }
   
   // 格式化时间显示

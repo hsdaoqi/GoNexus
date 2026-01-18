@@ -36,6 +36,11 @@ class RAGEngine:
             ids=[msg_id]
         )
 
+    # 撤回记忆
+    def revoke_memory(self, msg_id: str):
+        print(f"🗑️ [撤回] 移除记忆 ID: {msg_id}")
+        self.collection.delete(ids=[msg_id])
+
     # 检索记忆
     def search_memory(self, query: str, session_id: str, limit: int = 3):
         print(f"🔍 [检索] 会话:{session_id} 问题:{query}")

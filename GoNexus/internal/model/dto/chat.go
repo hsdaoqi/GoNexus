@@ -17,4 +17,5 @@ type ChatHistoryResponse struct {
 	// 发送者信息
 	SenderAvatar   string `json:"sender_avatar"`
 	SenderNickname string `json:"sender_nickname"`
+	IsRevoked      bool   `json:"is_revoked"` //是否撤回
 }

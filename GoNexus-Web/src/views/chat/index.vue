@@ -17,6 +17,9 @@
     <div v-if="showAI" class="layout-right">
         <AIPanel @close="showAI = false" />
     </div>
+    <div v-else-if="chatStore.currentChat?.isGroup" class="layout-right">
+        <GroupRightPanel />
+    </div>
     </transition>
 </div>
 </template>
@@ -28,6 +31,7 @@ import { ElMessage } from 'element-plus'
 import SidePanel from './SidePanel.vue'
 import ChatWindow from './ChatWindow.vue'
 import AIPanel from './AIPanel.vue'
+import GroupRightPanel from './GroupRightPanel.vue'
 import { useChatStore } from '../../store/chat'
 import { useUserStore } from '@/store/user'
 import { useFriendStore } from '@/store/friend'
@@ -54,6 +58,10 @@ const chatMessageHandler = (message: any) => {
   } else if (message.type === 5) {
     sidePanelRef.value?.initData()
     return true
+  } else if (message.type === 7) {
+    // 消息撤回 (content 是 msg_id)
+    chatStore.handleRevokeMessage(Number(message.content))
+    return true
   } else {
     // 普通聊天消息
     chatStore.addMessage(message)
@@ -68,20 +76,26 @@ onMounted(() => {
 
 onUnmounted(() => {
   removeMessageHandler(chatMessageHandler)
+  chatStore.clearCurrentChat()
 })
 
 // Chat页面不再主动建立WebSocket连接，使用全局连接
 // 消息处理逻辑已经移到useWebSocket组合函数中
 
 // 处理发送
-const handleSendSocket = (text: string) => {
+const handleSendSocket = (text: string, type: number = 1, url: string = '', fileName: string = '', fileSize: number = 0) => {
     if (!chatStore.currentChat) return
 
+    const chat_type = chatStore.currentChat.isGroup ? 2 : 1
+
     const msg = {
-        type: 1,
+        type: type,
         to_user_id: chatStore.currentChat.id,
-        chat_type: 1,
+        chat_type,
         content: text,
+        url: url,
+        file_name: fileName,
+        file_size: fileSize,
         sender_nickname: userStore.userInfo.nickname
     }
     sendMessage(msg)
@@ -129,7 +143,7 @@ z-index: 5;
 }
 
 .layout-right {
-width: 320px;
+width: 260px;
 height: 100%;
 flex-shrink: 0;
 z-index: 10;

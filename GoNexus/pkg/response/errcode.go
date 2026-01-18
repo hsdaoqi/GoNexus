@@ -7,6 +7,7 @@ const (
 	// 1000~1999: 通用错误
 	ErrSystemError  = 1001 // 系统内部错误 (Database error, etc.)
 	ErrParamInvalid = 1002 // 参数校验失败
+	ErrBusiness     = 1003 // 业务逻辑错误
 
 	// 2000~2999: 用户模块错误
 	ErrUserExist     = 2001 // 用户已存在
@@ -20,6 +21,7 @@ var msgMap = map[int]string{
 	CodeSuccess:      "success",
 	ErrSystemError:   "系统内部错误",
 	ErrParamInvalid:  "参数非法",
+	ErrBusiness:      "业务处理失败",
 	ErrUserExist:     "该用户名已被注册",
 	ErrUserNotExist:  "用户不存在",
 	ErrPasswordError: "密码错误",

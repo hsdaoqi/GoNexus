@@ -49,6 +49,11 @@ class AIServiceStub(object):
                 request_serializer=ai__service__pb2.SearchRequest.SerializeToString,
                 response_deserializer=ai__service__pb2.SearchResponse.FromString,
                 _registered_method=True)
+        self.RevokeMessage = channel.unary_unary(
+                '/proto.AIService/RevokeMessage',
+                request_serializer=ai__service__pb2.RevokeRequest.SerializeToString,
+                response_deserializer=ai__service__pb2.RevokeResponse.FromString,
+                _registered_method=True)
 
 
 class AIServiceServicer(object):
@@ -72,6 +77,12 @@ class AIServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def RevokeMessage(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_AIServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -89,6 +100,11 @@ def add_AIServiceServicer_to_server(servicer, server):
                     servicer.SemanticSearch,
                     request_deserializer=ai__service__pb2.SearchRequest.FromString,
                     response_serializer=ai__service__pb2.SearchResponse.SerializeToString,
+            ),
+            'RevokeMessage': grpc.unary_unary_rpc_method_handler(
+                    servicer.RevokeMessage,
+                    request_deserializer=ai__service__pb2.RevokeRequest.FromString,
+                    response_serializer=ai__service__pb2.RevokeResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -172,6 +188,33 @@ class AIService(object):
             '/proto.AIService/SemanticSearch',
             ai__service__pb2.SearchRequest.SerializeToString,
             ai__service__pb2.SearchResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RevokeMessage(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/proto.AIService/RevokeMessage',
+            ai__service__pb2.RevokeRequest.SerializeToString,
+            ai__service__pb2.RevokeResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -44,4 +44,7 @@ type Friend struct {
 
 	// 来源 (记录你们是怎么认识的)
 	Source int `json:"source" gorm:"type:tinyint;default:1;comment:来源"`
+
+	// 未读消息数
+	UnreadCount int `json:"unread_count" gorm:"default:0;comment:未读消息数"`
 }

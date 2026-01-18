@@ -157,8 +157,10 @@ func GetFriendListWithOnlineStatus(userID uint, checker OnlineStatusChecker) ([]
 	}
 
 	// 为每个好友添加在线状态
-	for i := range friends {
-		friends[i].IsOnline = checker.IsUserOnline(friends[i].ID)
+	if checker != nil {
+		for i := range friends {
+			friends[i].IsOnline = checker.IsUserOnline(friends[i].ID)
+		}
 	}
 
 	return friends, nil

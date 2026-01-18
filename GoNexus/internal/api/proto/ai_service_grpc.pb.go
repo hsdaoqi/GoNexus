@@ -24,6 +24,7 @@ const (
 	AIService_SyncMessage_FullMethodName    = "/proto.AIService/SyncMessage"
 	AIService_ChatSummary_FullMethodName    = "/proto.AIService/ChatSummary"
 	AIService_SemanticSearch_FullMethodName = "/proto.AIService/SemanticSearch"
+	AIService_RevokeMessage_FullMethodName  = "/proto.AIService/RevokeMessage"
 )
 
 // AIServiceClient is the client API for AIService service.
@@ -38,6 +39,8 @@ type AIServiceClient interface {
 	ChatSummary(ctx context.Context, in *SummaryRequest, opts ...grpc.CallOption) (*SummaryResponse, error)
 	// 3. 语义搜索 (Go -> Python 问问题)
 	SemanticSearch(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error)
+	// 4. 撤回消息 (Go -> Python 删记忆)
+	RevokeMessage(ctx context.Context, in *RevokeRequest, opts ...grpc.CallOption) (*RevokeResponse, error)
 }
 
 type aIServiceClient struct {
@@ -78,6 +81,16 @@ func (c *aIServiceClient) SemanticSearch(ctx context.Context, in *SearchRequest,
 	return out, nil
 }
 
+func (c *aIServiceClient) RevokeMessage(ctx context.Context, in *RevokeRequest, opts ...grpc.CallOption) (*RevokeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeResponse)
+	err := c.cc.Invoke(ctx, AIService_RevokeMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AIServiceServer is the server API for AIService service.
 // All implementations must embed UnimplementedAIServiceServer
 // for forward compatibility.
@@ -90,6 +103,8 @@ type AIServiceServer interface {
 	ChatSummary(context.Context, *SummaryRequest) (*SummaryResponse, error)
 	// 3. 语义搜索 (Go -> Python 问问题)
 	SemanticSearch(context.Context, *SearchRequest) (*SearchResponse, error)
+	// 4. 撤回消息 (Go -> Python 删记忆)
+	RevokeMessage(context.Context, *RevokeRequest) (*RevokeResponse, error)
 	mustEmbedUnimplementedAIServiceServer()
 }
 
@@ -108,6 +123,9 @@ func (UnimplementedAIServiceServer) ChatSummary(context.Context, *SummaryRequest
 }
 func (UnimplementedAIServiceServer) SemanticSearch(context.Context, *SearchRequest) (*SearchResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SemanticSearch not implemented")
+}
+func (UnimplementedAIServiceServer) RevokeMessage(context.Context, *RevokeRequest) (*RevokeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeMessage not implemented")
 }
 func (UnimplementedAIServiceServer) mustEmbedUnimplementedAIServiceServer() {}
 func (UnimplementedAIServiceServer) testEmbeddedByValue()                   {}
@@ -184,6 +202,24 @@ func _AIService_SemanticSearch_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AIService_RevokeMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AIServiceServer).RevokeMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AIService_RevokeMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AIServiceServer).RevokeMessage(ctx, req.(*RevokeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AIService_ServiceDesc is the grpc.ServiceDesc for AIService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -202,6 +238,10 @@ var AIService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SemanticSearch",
 			Handler:    _AIService_SemanticSearch_Handler,
+		},
+		{
+			MethodName: "RevokeMessage",
+			Handler:    _AIService_RevokeMessage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

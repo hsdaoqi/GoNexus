@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x61i_service.proto\x12\x05proto\"e\n\x0bSyncRequest\x12\x0f\n\x07user_id\x18\x01 \x01(\r\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\x12\x0e\n\x06msg_id\x18\x03 \x01(\t\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12\x12\n\nsession_id\x18\x05 \x01(\t\"\x1c\n\x0cSyncResponse\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x05\"3\n\x0eSummaryRequest\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12\r\n\x05\x63hats\x18\x02 \x03(\t\"0\n\x0fSummaryResponse\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x05\x12\x0f\n\x07summary\x18\x02 \x01(\t\"A\n\rSearchRequest\x12\r\n\x05query\x18\x01 \x01(\t\x12\r\n\x05limit\x18\x02 \x01(\x05\x12\x12\n\nsession_id\x18\x03 \x01(\t\".\n\x0eSearchResponse\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x05\x12\x0e\n\x06\x61nswer\x18\x02 \x01(\t2\xc0\x01\n\tAIService\x12\x36\n\x0bSyncMessage\x12\x12.proto.SyncRequest\x1a\x13.proto.SyncResponse\x12<\n\x0b\x43hatSummary\x12\x15.proto.SummaryRequest\x1a\x16.proto.SummaryResponse\x12=\n\x0eSemanticSearch\x12\x14.proto.SearchRequest\x1a\x15.proto.SearchResponseB\nZ\x08./;protob\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10\x61i_service.proto\x12\x05proto\"0\n\rRevokeRequest\x12\x0e\n\x06msg_id\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\r\"\x1e\n\x0eRevokeResponse\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x05\"e\n\x0bSyncRequest\x12\x0f\n\x07user_id\x18\x01 \x01(\r\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\x12\x0e\n\x06msg_id\x18\x03 \x01(\t\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12\x12\n\nsession_id\x18\x05 \x01(\t\"\x1c\n\x0cSyncResponse\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x05\"3\n\x0eSummaryRequest\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12\r\n\x05\x63hats\x18\x02 \x03(\t\"0\n\x0fSummaryResponse\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x05\x12\x0f\n\x07summary\x18\x02 \x01(\t\"A\n\rSearchRequest\x12\r\n\x05query\x18\x01 \x01(\t\x12\r\n\x05limit\x18\x02 \x01(\x05\x12\x12\n\nsession_id\x18\x03 \x01(\t\".\n\x0eSearchResponse\x12\x0c\n\x04\x63ode\x18\x01 \x01(\x05\x12\x0e\n\x06\x61nswer\x18\x02 \x01(\t2\xfe\x01\n\tAIService\x12\x36\n\x0bSyncMessage\x12\x12.proto.SyncRequest\x1a\x13.proto.SyncResponse\x12<\n\x0b\x43hatSummary\x12\x15.proto.SummaryRequest\x1a\x16.proto.SummaryResponse\x12=\n\x0eSemanticSearch\x12\x14.proto.SearchRequest\x1a\x15.proto.SearchResponse\x12<\n\rRevokeMessage\x12\x14.proto.RevokeRequest\x1a\x15.proto.RevokeResponseB\nZ\x08./;protob\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,18 +32,22 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'ai_service_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z\010./;proto'
-  _globals['_SYNCREQUEST']._serialized_start=27
-  _globals['_SYNCREQUEST']._serialized_end=128
-  _globals['_SYNCRESPONSE']._serialized_start=130
-  _globals['_SYNCRESPONSE']._serialized_end=158
-  _globals['_SUMMARYREQUEST']._serialized_start=160
-  _globals['_SUMMARYREQUEST']._serialized_end=211
-  _globals['_SUMMARYRESPONSE']._serialized_start=213
-  _globals['_SUMMARYRESPONSE']._serialized_end=261
-  _globals['_SEARCHREQUEST']._serialized_start=263
-  _globals['_SEARCHREQUEST']._serialized_end=328
-  _globals['_SEARCHRESPONSE']._serialized_start=330
-  _globals['_SEARCHRESPONSE']._serialized_end=376
-  _globals['_AISERVICE']._serialized_start=379
-  _globals['_AISERVICE']._serialized_end=571
+  _globals['_REVOKEREQUEST']._serialized_start=27
+  _globals['_REVOKEREQUEST']._serialized_end=75
+  _globals['_REVOKERESPONSE']._serialized_start=77
+  _globals['_REVOKERESPONSE']._serialized_end=107
+  _globals['_SYNCREQUEST']._serialized_start=109
+  _globals['_SYNCREQUEST']._serialized_end=210
+  _globals['_SYNCRESPONSE']._serialized_start=212
+  _globals['_SYNCRESPONSE']._serialized_end=240
+  _globals['_SUMMARYREQUEST']._serialized_start=242
+  _globals['_SUMMARYREQUEST']._serialized_end=293
+  _globals['_SUMMARYRESPONSE']._serialized_start=295
+  _globals['_SUMMARYRESPONSE']._serialized_end=343
+  _globals['_SEARCHREQUEST']._serialized_start=345
+  _globals['_SEARCHREQUEST']._serialized_end=410
+  _globals['_SEARCHRESPONSE']._serialized_start=412
+  _globals['_SEARCHRESPONSE']._serialized_end=458
+  _globals['_AISERVICE']._serialized_start=461
+  _globals['_AISERVICE']._serialized_end=715
 # @@protoc_insertion_point(module_scope)

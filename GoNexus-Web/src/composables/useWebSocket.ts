@@ -1,6 +1,7 @@
 import { ref, onMounted, onUnmounted, readonly } from 'vue'
 import { useUserStore } from '../store/user'
 import { useFriendStore } from '../store/friend'
+import { useChatStore } from '../store/chat'
 import { ElMessage } from 'element-plus'
 
 interface MessageHandler {
@@ -10,6 +11,7 @@ interface MessageHandler {
 export function useWebSocket() {
   const userStore = useUserStore()
   const friendStore = useFriendStore()
+  const chatStore = useChatStore()
   const messageHandlers = ref<MessageHandler[]>([])
 
   const socket = ref<WebSocket | null>(null)
@@ -33,9 +35,9 @@ export function useWebSocket() {
       socket.value = new WebSocket(wsUrl)
 
       socket.value.onopen = () => {
-        console.log('WebSocket连接已建立')
+        // console.log('WebSocket连接已建立')
         isConnected.value = true
-        ElMessage.success('实时连接已建立')
+        // ElMessage.success('实时连接已建立')
 
         // 将连接暴露到全局，供其他组件使用
         ;(window as any).globalWebSocket = socket.value
@@ -98,17 +100,31 @@ export function useWebSocket() {
     console.log('收到WebSocket消息:', message)
 
     // 处理好友状态变化
-    if (message.type === 'friend_status_change' ||
-        message.type === 'user_online' ||
-        message.type === 'user_offline') {
-      friendStore.handleWebSocketMessage(message)
-      return true
+    // 后端协议: TypeUserStatus = 8
+    if (message.type === 8) {
+        // content = "1" (online) or "0" (offline)
+        const isOnline = message.content === "1"
+        friendStore.updateFriendStatus(message.from_user_id, isOnline)
+        return true
     }
 
     // 处理系统消息
     if (message.type === 'system') {
       ElMessage.info(message.content || '系统消息')
       return true
+    }
+
+    // 撤回消息
+    if (message.type === 7) {
+        chatStore.handleRevokeMessage(Number(message.content))
+        return true
+    }
+
+    // 普通聊天消息 (type 1, 2, 3, 9)
+    // 即使不在Chat页面，也需要更新未读计数
+    if (message.type === 1 || message.type === 2 || message.type === 3 || message.type === 9) {
+        chatStore.addMessage(message)
+        return true
     }
 
     return false // 未处理

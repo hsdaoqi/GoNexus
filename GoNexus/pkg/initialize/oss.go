@@ -1,11 +1,14 @@
 package initialize
 
 import (
+	"fmt"
 	"go-nexus/pkg/global"
 	"go-nexus/pkg/utils/upload"
 )
 
 func InitOSS() {
+	fmt.Println(global.Config.Upload.Oss.AccessKey)
+	fmt.Println(global.Config.Upload.Oss.SecretKey)
 	// 根据配置文件，只在启动时创建一次实例
 	switch global.Config.Upload.Type {
 	case "oss":

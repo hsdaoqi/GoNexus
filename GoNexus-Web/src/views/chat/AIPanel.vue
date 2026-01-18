@@ -36,8 +36,7 @@
     aiAnswer.value = 'Analyzing...'
     try {
       const target_id = chatStore.currentChat?.id
-      //1为单聊，2为群聊,目前只支持单聊
-      const chat_type = 1
+      const chat_type = chatStore.currentChat?.isGroup ? 2 : 1
       const res: any = await askAI(aiQuery.value,target_id,chat_type)
       aiAnswer.value = res.answer
     } catch (e) {

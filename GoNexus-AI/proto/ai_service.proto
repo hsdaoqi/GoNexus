@@ -7,6 +7,16 @@ service AIService {
   rpc SyncMessage (SyncRequest) returns (SyncResponse);
   rpc ChatSummary (SummaryRequest) returns (SummaryResponse);
   rpc SemanticSearch (SearchRequest) returns (SearchResponse);
+  rpc RevokeMessage (RevokeRequest) returns (RevokeResponse);
+}
+
+message RevokeRequest {
+  string msg_id = 1;
+  uint32 user_id = 2;
+}
+
+message RevokeResponse {
+  int32 code = 1;
 }
 
 message SyncRequest {

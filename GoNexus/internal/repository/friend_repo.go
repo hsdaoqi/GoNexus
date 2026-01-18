@@ -4,6 +4,8 @@ import (
 	"go-nexus/internal/model"
 	"go-nexus/internal/model/dto"
 	"go-nexus/pkg/global"
+
+	"gorm.io/gorm"
 )
 
 //--- 好友关系操作 ---
@@ -25,12 +27,26 @@ func GetFriendList(userID uint) ([]model.UserProfileResponse, error) {
 	//逻辑：查 users 表，条件是 users.id 必须在 friends 表里出现，且对应的 user_id 是我
 	//添加条件过滤软删除的好友记录
 	err := global.DB.Table("users").
-		Select("users.*").
+		Select("users.*, friends.unread_count").
 		Joins("JOIN friends on friends.friend_id = users.id").
 		Where("friends.user_id = ? AND friends.deleted_at IS NULL", userID).
 		Find(&friends).Error
 
 	return friends, err
+}
+
+// IncrementFriendUnread 增加未读数
+func IncrementFriendUnread(userID, friendID uint) error {
+	return global.DB.Model(&model.Friend{}).
+		Where("user_id = ? AND friend_id = ?", userID, friendID).
+		UpdateColumn("unread_count", gorm.Expr("unread_count + ?", 1)).Error
+}
+
+// ClearFriendUnread 清除未读数
+func ClearFriendUnread(userID, friendID uint) error {
+	return global.DB.Model(&model.Friend{}).
+		Where("user_id = ? AND friend_id = ?", userID, friendID).
+		Update("unread_count", 0).Error
 }
 
 // --- 申请记录操作 ---

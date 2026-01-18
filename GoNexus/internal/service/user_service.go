@@ -100,6 +100,9 @@ func UpdateUserInfo(userinfo vo.UpdateUser, userID uint) error {
 	user.Birthday = userinfo.Birthday
 	user.Signature = userinfo.Signature
 	user.Location = userinfo.Location
+	if userinfo.Avatar != "" {
+		user.Avatar = userinfo.Avatar
+	}
 	err = repository.SaveUser(user)
 	if err != nil {
 		return err

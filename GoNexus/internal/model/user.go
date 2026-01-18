@@ -52,6 +52,7 @@ type User struct {
 	LastLoginTime time.Time `gorm:"comment:最后登录时间戳"`
 	Birthday      time.Time `json:"birthday"`
 	Location      string    `json:"location"`
+	IsOnline      bool      `json:"is_online" gorm:"-"` // 在线状态(仅内存)
 }
 
 func (User) TableName() string {
@@ -83,5 +84,6 @@ type UserProfileResponse struct {
 	Gender        string    `json:"gender"`
 	Birthday      time.Time `json:"birthday"`
 	Location      string    `json:"location"`
-	IsOnline      bool      `json:"is_online"` // 在线状态
+	IsOnline      bool      `json:"is_online"`    // 在线状态
+	UnreadCount   int       `json:"unread_count"` // 未读消息数
 }

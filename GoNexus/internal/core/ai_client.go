@@ -58,3 +58,19 @@ func AsyncSyncMessage(userID uint, content string, msgID string, nickname string
 		}
 	}()
 }
+
+// AsyncRevokeMessage 异步撤回消息
+func AsyncRevokeMessage(userID uint, msgID string) {
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		_, err := AIClient.RevokeMessage(ctx, &pb.RevokeRequest{
+			UserId: uint32(userID),
+			MsgId:  msgID,
+		})
+		if err != nil {
+			log.Printf("⚠️ AI 撤回失败: %v", err)
+		}
+	}()
+}

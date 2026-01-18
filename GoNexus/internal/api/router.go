@@ -1,10 +1,11 @@
 package api
 
 import (
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
 	v1 "go-nexus/internal/api/v1"
 	"go-nexus/internal/middleware"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 // InitRouter 初始化路由
@@ -48,6 +49,8 @@ func InitRouter() *gin.Engine {
 		chatGroup := privateGroup.Group("/chat")
 		{
 			chatGroup.GET("/history", v1.GetChatHistory)
+			chatGroup.POST("/revoke", v1.RevokeMessage)
+			chatGroup.POST("/read", v1.ReadMessage)
 		}
 
 		aiGroup := privateGroup.Group("/ai")
@@ -59,6 +62,20 @@ func InitRouter() *gin.Engine {
 		fileGroup := privateGroup.Group("/file")
 		{
 			fileGroup.POST("/upload", v1.Upload)
+		}
+
+		groupGroup := privateGroup.Group("/group")
+		{
+			// ... 之前的 public, join ...
+			groupGroup.POST("/create", v1.CreateGroup)
+			groupGroup.GET("/mine", v1.GetMyGroups)        // 获取我的群组
+			groupGroup.POST("/update", v1.UpdateGroup)     // 更新群资料
+			groupGroup.GET("/members", v1.GetGroupMembers) // 获取群成员
+			groupGroup.POST("/invite", v1.InviteMember)    // 邀请好友
+			groupGroup.POST("/kick", v1.KickMember)        // 踢人
+			groupGroup.POST("/mute", v1.MuteMember)        // 禁言
+			groupGroup.POST("/admin", v1.SetAdmin)         // 设置管理员
+			groupGroup.POST("/transfer", v1.TransferGroup) // 转让群主
 		}
 	}
 	return r

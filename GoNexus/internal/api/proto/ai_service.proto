@@ -14,9 +14,21 @@ service AIService {
 
   // 3. 语义搜索 (Go -> Python 问问题)
   rpc SemanticSearch (SearchRequest) returns (SearchResponse);
+
+  // 4. 撤回消息 (Go -> Python 删记忆)
+  rpc RevokeMessage (RevokeRequest) returns (RevokeResponse);
 }
 
 // --- 数据结构 ---
+
+message RevokeRequest {
+  string msg_id = 1;
+  uint32 user_id = 2;
+}
+
+message RevokeResponse {
+  int32 code = 1;
+}
 
 message SyncRequest {
   uint32 user_id = 1;

@@ -29,6 +29,14 @@ class AIService(ai_service_pb2_grpc.AIServiceServicer):
             print(f"❌ Error: {e}")
             return ai_service_pb2.SyncResponse(code=500)
 
+    def RevokeMessage(self, request, context):
+        try:
+            engine.revoke_memory(request.msg_id)
+            return ai_service_pb2.RevokeResponse(code=200)
+        except Exception as e:
+            print(f"❌ Error Revoke: {e}")
+            return ai_service_pb2.RevokeResponse(code=500)
+
     def SemanticSearch(self, request, context):
         try:
             answer = engine.rag_qa(request.query, request.session_id, request.limit)

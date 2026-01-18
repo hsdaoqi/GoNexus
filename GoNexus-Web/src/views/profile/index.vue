@@ -309,7 +309,8 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Edit } from '@element-plus/icons-vue'
 import { useUserStore } from '../../store/user'
-import { updateAvatar, updateUserInfo } from '../../api/user'
+import { updateUserInfo } from '../../api/user'
+import { uploadFile } from '../../api/file'
 
 const userStore = useUserStore()
 
@@ -511,10 +512,25 @@ const handleAvatarChange = async (event: Event) => {
         try {
             // 调用上传头像的API
             const formData = new FormData()
-            formData.append('avatar', file)
-            const res: any = await updateAvatar(formData)
-            userInfo.avatar = res.avatar
-            userStore.setUserInfo({ avatar: res.avatar })
+            formData.append('file', file)
+            const res: any = await uploadFile(formData)
+            const newAvatar = res.url
+            
+            // 构建全量更新数据，避免清空其他字段
+            const updateData = {
+                nickname: userInfo.nickname,
+                email: userInfo.email,
+                gender: userInfo.gender,
+                birthday: userInfo.birthday ? new Date(userInfo.birthday).toISOString() : null,
+                location: userInfo.location,
+                signature: userInfo.signature,
+                avatar: newAvatar
+            }
+
+            await updateUserInfo(updateData)
+            
+            userInfo.avatar = newAvatar
+            userStore.setUserInfo({ avatar: newAvatar })
             ElMessage.success('头像上传成功')
 
             // 重新从后端获取完整用户信息，确保数据同步

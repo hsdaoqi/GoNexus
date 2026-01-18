@@ -5,7 +5,6 @@ import (
 	"go-nexus/internal/api"
 	"go-nexus/internal/core"
 	"go-nexus/internal/core/socket"
-	"go-nexus/internal/model"
 	"go-nexus/pkg/global"
 	"go-nexus/pkg/initialize"
 )
@@ -16,11 +15,13 @@ func main() {
 	initialize.InitMySQL()
 	initialize.InitOSS()
 	core.InitAIClient()
-
 	//global.DB.AutoMigrate(&model.Message{})
-	global.DB.AutoMigrate(&model.User{})
+	//global.DB.AutoMigrate(&model.User{})
 	//global.DB.AutoMigrate(&model.Friend{})
 	//global.DB.AutoMigrate(&model.FriendRequest{})
+	//global.DB.AutoMigrate(&model.Group{})
+	//global.DB.AutoMigrate(&model.GroupMember{})
+	//global.DB.AutoMigrate(&model.GroupMember{})
 	//初始化路由
 	r := api.InitRouter()
 

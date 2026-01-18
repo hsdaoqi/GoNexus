@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { getFriendList } from '../api/friend'
+import { useChatStore } from './chat'
 
 export interface Friend {
   id: number
@@ -13,6 +14,7 @@ export interface Friend {
   location: string
   isOnline: boolean
   lastSeen: string
+  unreadCount?: number
 }
 
 export const useFriendStore = defineStore('friend', {
@@ -47,19 +49,28 @@ export const useFriendStore = defineStore('friend', {
         const friendsData = res || res.friends || res.data || []
 
         // 处理好友数据，确保有状态字段
-        this.friends = friendsData.map((friend: any) => ({
-          id: friend.id,
-          username: friend.username,
-          nickname: friend.nickname || friend.username,
-          avatar: friend.avatar || '',
-          email: friend.email || '',
-          signature: friend.signature || '',
-          gender: friend.gender || '',
-          birthday: friend.birthday || '',
-          location: friend.location || '',
-          isOnline: friend.is_online || friend.isOnline || false,
-          lastSeen: friend.last_seen || friend.lastSeen || new Date().toISOString()
-        }))
+        const chatStore = useChatStore()
+        this.friends = friendsData.map((friend: any) => {
+          // 同步未读计数到 chatStore
+          if (friend.unread_count && friend.unread_count > 0) {
+            chatStore.unreadMap[`friend_${friend.id}`] = friend.unread_count
+          }
+          
+          return {
+            id: friend.id,
+            username: friend.username,
+            nickname: friend.nickname || friend.username,
+            avatar: friend.avatar || '',
+            email: friend.email || '',
+            signature: friend.signature || '',
+            gender: friend.gender || '',
+            birthday: friend.birthday || '',
+            location: friend.location || '',
+            isOnline: friend.is_online || friend.isOnline || false,
+            lastSeen: friend.last_seen || friend.lastSeen || new Date().toISOString(),
+            unreadCount: friend.unread_count || 0
+          }
+        })
 
         this.updateOnlineCount()
         this.lastUpdate = new Date()

@@ -44,3 +44,19 @@ func GetChatHistoryWithUserInfo(uid, targetID uint, offset, limit int) ([]dto.Ch
 
 	return messages, err
 }
+
+// GetGroupChatHistoryWithUserInfo 获取群聊历史记录（带用户信息）
+func GetGroupChatHistoryWithUserInfo(uid, groupID uint, offset, limit int) ([]dto.ChatHistoryResponse, error) {
+	var messages []dto.ChatHistoryResponse
+
+	err := global.DB.Table("messages").
+		Select(`messages.*, users.avatar as sender_avatar, users.nickname as sender_nickname`).
+		Joins("LEFT JOIN users ON messages.from_user_id = users.id").
+		Where("messages.chat_type = ? AND messages.to_user_id = ?", model.ChatTypeGroup, groupID).
+		Order("messages.created_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&messages).Error
+
+	return messages, err
+}

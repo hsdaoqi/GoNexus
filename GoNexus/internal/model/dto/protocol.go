@@ -4,12 +4,16 @@ import "encoding/json"
 
 // 消息类型常量 (移到这里，方便全局引用)
 const (
-	TypeHeartbeat = 0 // 心跳
-	TypeText      = 1 // 文本
-	TypeImage     = 2 // 图片
-	TypeAudio     = 3 // 语音
-	TypeFriendReq = 4 // 好友申请通知
-	TypeFriendAns = 5 //对方同意了我的申请
+	TypeHeartbeat  = 0 // 心跳
+	TypeText       = 1 // 文本
+	TypeImage      = 2 // 图片
+	TypeAudio      = 3 // 语音
+	TypeFriendReq  = 4 // 好友申请通知
+	TypeFriendAns  = 5 //对方同意了我的申请
+	TypeSystem     = 6 // 系统通知
+	TypeRevoke     = 7 // 消息撤回
+	TypeUserStatus = 8 // 用户在线状态变更
+	TypeFile       = 9 // 文件消息
 )
 
 // 聊天类型常量
@@ -35,6 +39,7 @@ type ProtocolMsg struct {
 	Content  string `json:"content"` // 文本
 	Url      string `json:"url"`     // 图片地址
 	FileSize int64  `json:"file_size"`
+	FileName string `json:"file_name"`
 
 	// 4. 用户信息 (前端展示用，数据库不存，但转发时要带上)
 	SenderAvatar   string `json:"sender_avatar"`
@@ -47,6 +52,8 @@ type ProtocolMsg struct {
 
 	// 6. 元数据
 	SendTime string `json:"send_time"` // 2023-12-12 10:00:00
+
+	MsgID uint `json:"msg_id,omitempty"`
 }
 
 // ToBytes 序列化
