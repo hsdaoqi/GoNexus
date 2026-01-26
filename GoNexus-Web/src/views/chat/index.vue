@@ -38,13 +38,26 @@ import { useFriendStore } from '@/store/friend'
 import { useWebSocket } from '@/composables/useWebSocket'
 import { ms } from 'element-plus/es/locales.mjs'
 
+import { useRoute } from 'vue-router'
+
 const userStore = useUserStore()
 const router = useRouter()
+const route = useRoute()
 const chatStore = useChatStore()
 const friendStore = useFriendStore()
 const { sendMessage, addMessageHandler, removeMessageHandler } = useWebSocket()
 const showAI = ref(false)
 const sidePanelRef = ref()
+
+onMounted(() => {
+    // 检查是否有 action 参数
+    if (route.query.action === 'add_friend') {
+        // 等待组件挂载
+        setTimeout(() => {
+            sidePanelRef.value?.openAddFriendDialog()
+        }, 500)
+    }
+})
 
 // Chat页面的消息处理器
 const chatMessageHandler = (message: any) => {
@@ -83,7 +96,7 @@ onUnmounted(() => {
 // 消息处理逻辑已经移到useWebSocket组合函数中
 
 // 处理发送
-const handleSendSocket = (text: string, type: number = 1, url: string = '', fileName: string = '', fileSize: number = 0) => {
+const handleSendSocket = (text: string, type: number = 1, url: string = '') => {
     if (!chatStore.currentChat) return
 
     const chat_type = chatStore.currentChat.isGroup ? 2 : 1
@@ -94,8 +107,6 @@ const handleSendSocket = (text: string, type: number = 1, url: string = '', file
         chat_type,
         content: text,
         url: url,
-        file_name: fileName,
-        file_size: fileSize,
         sender_nickname: userStore.userInfo.nickname
     }
     sendMessage(msg)

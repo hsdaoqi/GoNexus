@@ -86,4 +86,5 @@ type UserProfileResponse struct {
 	Location      string    `json:"location"`
 	IsOnline      bool      `json:"is_online"`    // 在线状态
 	UnreadCount   int       `json:"unread_count"` // 未读消息数
+	LastMsg       string    `json:"last_msg"`     // 最后一条消息内容
 }

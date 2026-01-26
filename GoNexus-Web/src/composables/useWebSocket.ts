@@ -120,9 +120,9 @@ export function useWebSocket() {
         return true
     }
 
-    // 普通聊天消息 (type 1, 2, 3, 9)
+    // 普通聊天消息 (type 1, 2, 3)
     // 即使不在Chat页面，也需要更新未读计数
-    if (message.type === 1 || message.type === 2 || message.type === 3 || message.type === 9) {
+    if (message.type === 1 || message.type === 2 || message.type === 3) {
         chatStore.addMessage(message)
         return true
     }

@@ -8,8 +8,8 @@ import (
 
 func UploadFile(file *multipart.FileHeader) (string, error) {
 	// 1. 大小限制
-	if file.Size > 50*1024*1024 {
-		return "", errors.New("文件大小不能超过 50MB")
+	if file.Size > 5*1024*1024 {
+		return "", errors.New("文件大小不能超过 5MB")
 	}
 
 	// 2. 直接使用全局单例调用！

@@ -59,6 +59,35 @@ func AsyncSyncMessage(userID uint, content string, msgID string, nickname string
 	}()
 }
 
+// ChatSummary 同步调用 AI 生成摘要
+func ChatSummary(chats []string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // 摘要生成可能较慢
+	defer cancel()
+
+	resp, err := AIClient.ChatSummary(ctx, &pb.SummaryRequest{
+		Chats: chats,
+	})
+	if err != nil {
+		return "", err
+	}
+	return resp.Summary, nil
+}
+
+// GetReplySuggestions 获取回复建议
+func GetReplySuggestions(chats []string, myName string) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := AIClient.SuggestReply(ctx, &pb.SuggestRequest{
+		RecentMessages: chats,
+		MyName:         myName,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return resp.Suggestions, nil
+}
+
 // AsyncRevokeMessage 异步撤回消息
 func AsyncRevokeMessage(userID uint, msgID string) {
 	go func() {

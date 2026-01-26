@@ -13,6 +13,9 @@
     <div class="header-info" v-else>
         <span class="target-name">未选择目标</span>
     </div>
+    <button v-if="chatStore.currentChat" class="ai-trigger-btn" @click="handleSummary" style="margin-right: 10px; background: rgba(230, 162, 60, 0.2); color: #e6a23c; border: 1px solid #e6a23c;">
+        <el-icon><Notebook /></el-icon> 总结
+    </button>
     <button class="ai-trigger-btn" @click="$emit('toggleAI')">
         <el-icon><Cpu /></el-icon> YUI-SYSTEM
     </button>
@@ -78,7 +81,16 @@
 
     <!-- Input Area -->
     <div class="input-area">
+      <!-- Suggestions -->
+      <div v-if="suggestions.length > 0" class="suggestions-box">
+          <div v-for="(s, i) in suggestions" :key="i" class="suggestion-chip" @click="applySuggestion(s)">
+              {{ s }}
+          </div>
+          <el-icon class="close-suggestions" @click="suggestions = []"><Close /></el-icon>
+      </div>
+
       <div class="toolbar-top">
+         <el-icon class="tool-icon magic-btn" @click="handleSuggest" title="AI 回复建议"><MagicStick /></el-icon>
          <el-icon :class="['tool-icon', { 'disabled': isMuted }]" @click="!isMuted && triggerUpload()" title="发送图片"><Paperclip /></el-icon>
          <input type="file" ref="fileInput" style="display: none" @change="handleFileChange" accept="image/*" :disabled="isMuted" />
          
@@ -110,14 +122,15 @@
 
 <script setup lang="ts">
 import { ref, nextTick, watch, onMounted, onUnmounted, computed } from 'vue'
-import { Cpu, Paperclip, Microphone, Document, Download } from '@element-plus/icons-vue'
+import { Cpu, Paperclip, Microphone, Document, Download, Notebook, MagicStick, Close } from '@element-plus/icons-vue'
 import { useChatStore } from '../../store/chat'
 import { useUserStore } from '../../store/user'
 import { useFriendStore } from '../../store/friend'
 import { uploadFile } from '../../api/file'
 import { getGroupMembers } from '../../api/group'
 import { revokeMessage } from '../../api/chat'
-import { ElMessage } from 'element-plus'
+import { getChatSummary, getReplySuggestions } from '../../api/ai'
+import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
 
 const emit = defineEmits(['sendMessage', 'toggleAI'])
 const chatStore = useChatStore()
@@ -192,6 +205,33 @@ const doRevoke = async () => {
   }
 }
 
+// 智能总结
+const handleSummary = async () => {
+    if (!chatStore.currentChat) return
+    const loading = ElLoading.service({ 
+        lock: true,
+        text: 'AI 正在阅读聊天记录并生成总结...',
+        background: 'rgba(0, 0, 0, 0.7)',
+    })
+    try {
+        const res: any = await getChatSummary({
+            target_id: chatStore.currentChat.id,
+            chat_type: chatStore.currentChat.isGroup ? 2 : 1
+        })
+        const summaryText = res.summary || res.data?.summary || '暂无内容'
+        
+        ElMessageBox.alert(summaryText, '智能聊天总结', {
+            confirmButtonText: '知道了',
+            customStyle: { maxWidth: '500px' },
+            dangerouslyUseHTMLString: false
+        })
+    } catch (e) {
+        ElMessage.error('总结生成失败')
+    } finally {
+        loading.close()
+    }
+}
+
 // 全局点击关闭菜单
 onMounted(() => {
   document.addEventListener('click', hideContextMenu)
@@ -229,6 +269,40 @@ const isRecording = ref(false)
 const mediaRecorder = ref<MediaRecorder | null>(null)
 const audioChunks = ref<Blob[]>([])
 
+// --- Reply Suggestions ---
+const suggestions = ref<string[]>([])
+
+const handleSuggest = async () => {
+    if (!chatStore.currentChat) return
+    suggestions.value = ['AI 正在思考...']
+    try {
+        const res: any = await getReplySuggestions({
+            target_id: chatStore.currentChat.id,
+            chat_type: chatStore.currentChat.isGroup ? 2 : 1
+        })
+        const list = res.suggestions || res.data?.suggestions || []
+        if (list.length === 0) {
+            ElMessage.info('AI 暂时没有好的建议')
+            suggestions.value = []
+        } else {
+            suggestions.value = list
+        }
+    } catch (e) {
+        // Silent fail or minimal notify
+        suggestions.value = []
+    }
+}
+
+const applySuggestion = (text: string) => {
+    if (text === 'AI 正在思考...') return
+    content.value = text
+    suggestions.value = []
+}
+
+watch(() => chatStore.currentChat?.id, () => {
+    suggestions.value = []
+})
+
 const triggerUpload = () => {
   fileInput.value.click()
 }
@@ -238,9 +312,9 @@ const handleFileChange = async (e: Event) => {
   if (!files || files.length === 0) return
   
   const file = files[0]
-  // 简单校验 (放宽到 50MB)
-  if (!file || file.size > 50 * 1024 * 1024) {
-    ElMessage.warning('文件大小不能超过 50MB')
+  // 简单校验
+  if (!file || file.size > 5 * 1024 * 1024) {
+    ElMessage.warning('文件大小不能超过 5MB')
     return
   }
 
@@ -251,10 +325,8 @@ const handleFileChange = async (e: Event) => {
     const res: any = await uploadFile(formData)
     // 假设后端返回 { url: '...' }
     if (res.url) {
-       // 判断文件类型
-       const isImage = file.type.startsWith('image/')
-       // 发送消息
-       emit('sendMessage', isImage ? '[图片]' : '[文件]', isImage ? 2 : 9, res.url, file.name, file.size)
+       // 发送图片消息：type=2
+       emit('sendMessage', '[图片]', 2, res.url)
     }
   } catch (e) {
     console.error('Upload failed', e)
@@ -357,7 +429,7 @@ height: 60px; background: white; border-bottom: 1px solid #e0e0e0; display: flex
 
 .empty-state { height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #999; }
 
-.input-area { height: 160px; background: white; border-top: 1px solid #e0e0e0; display: flex; flex-direction: column; padding: 10px 20px; }
+.input-area { height: 160px; background: white; border-top: 1px solid #e0e0e0; display: flex; flex-direction: column; padding: 10px 20px; position: relative; }
 .toolbar-top { margin-bottom: 5px; display: flex; gap: 10px; }
 .tool-icon { font-size: 20px; color: #666; cursor: pointer; transition: color 0.3s; }
 .tool-icon:hover { color: #4facfe; }
@@ -428,50 +500,46 @@ height: 60px; background: white; border-bottom: 1px solid #e0e0e0; display: flex
 .tool-icon.disabled:hover { color: #666; }
 .btn-disabled { background: #e0e0e0 !important; color: #999 !important; border-color: #dcdfe6 !important; cursor: not-allowed; }
 
-/* 文件消息样式 */
-.file-bubble {
-  padding: 0 !important;
-  overflow: hidden;
-  width: 240px;
-}
-.file-card {
-  display: flex;
-  align-items: center;
-  padding: 10px;
-  background: #f9f9f9;
-  border-radius: 8px;
-}
-.file-icon {
-  font-size: 40px;
-  color: #909399;
-  margin-right: 10px;
-}
-.file-info {
-  flex: 1;
-  overflow: hidden;
-}
-.file-name {
-  font-size: 14px;
-  color: #333;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 4px;
-}
-.file-size {
-  font-size: 12px;
-  color: #999;
-}
-.download-btn {
-  margin-left: 10px;
-  color: #409eff;
-  font-size: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-}
-.download-btn:hover {
-  color: #66b1ff;
-}
+  .ai-trigger-btn:hover {
+    background-color: rgba(64, 158, 255, 0.2);
+  }
+
+  .suggestions-box {
+      position: absolute;
+      top: -45px;
+      left: 10px;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+  }
+  .suggestion-chip {
+      background: #e6f7ff;
+      border: 1px solid #91d5ff;
+      color: #1890ff;
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  }
+  .suggestion-chip:hover {
+      background: #bae7ff;
+      transform: translateY(-2px);
+  }
+  .close-suggestions {
+      cursor: pointer;
+      color: #999;
+      align-self: center;
+      background: rgba(255,255,255,0.8);
+      border-radius: 50%;
+      padding: 2px;
+  }
+  .magic-btn {
+      color: #722ed1; 
+  }
+  .magic-btn:hover {
+      background-color: rgba(114, 46, 209, 0.1);
+  }
 </style>

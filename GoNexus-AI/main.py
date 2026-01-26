@@ -51,6 +51,14 @@ class AIService(ai_service_pb2_grpc.AIServiceServicer):
         except Exception as e:
             return ai_service_pb2.SummaryResponse(code=500)
 
+    def SuggestReply(self, request, context):
+        try:
+            suggestions = engine.reply_suggestion(request.recent_messages, request.my_name)
+            return ai_service_pb2.SuggestResponse(code=200, suggestions=suggestions)
+        except Exception as e:
+            print(f"❌ Error Suggest: {e}")
+            return ai_service_pb2.SuggestResponse(code=500)
+
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

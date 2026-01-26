@@ -13,7 +13,6 @@ const (
 	TypeSystem     = 6 // 系统通知
 	TypeRevoke     = 7 // 消息撤回
 	TypeUserStatus = 8 // 用户在线状态变更
-	TypeFile       = 9 // 文件消息
 )
 
 // 聊天类型常量

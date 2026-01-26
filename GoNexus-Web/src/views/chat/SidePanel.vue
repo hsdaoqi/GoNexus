@@ -104,7 +104,7 @@
            </div>
            <div class="friend-info">
             <div class="friend-name">{{ group.name }}</div>
-            <div class="friend-sig text-truncate">{{ group.notice || '暂无公告' }}</div>
+            <div class="friend-sig text-truncate">{{ group.last_msg || group.notice || '暂无公告' }}</div>
           </div>
         </div>
      </template>
@@ -221,6 +221,11 @@ const handleSelectGroup = (group: any) => {
   })
 }
 
+// 暴露给父组件的方法
+const openAddFriendDialog = () => {
+  dialogVisible.value = true
+}
+
 // 其他业务逻辑 (保持不变)
 const showRequestDialog = async () => {
   requestVisible.value = true
@@ -267,7 +272,7 @@ const handleDelete = (friend: any) => {
 }
 
 // 暴露方法
-defineExpose({ refreshPendingList: initData, initData })
+defineExpose({ refreshPendingList: initData, initData, openAddFriendDialog })
 </script>
 
 <style scoped>

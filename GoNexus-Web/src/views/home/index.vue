@@ -57,24 +57,26 @@
           </div>
   
           <div class="chat-grid">
-            <!-- 模拟最近联系人，点击直接跳转聊天 -->
-            <div class="chat-card" @click="router.push('/chat')">
-              <div class="card-icon group-bg"><el-icon><ChatDotRound /></el-icon></div>
-              <div class="card-info">
-                <h4>公共大厅</h4>
-                <p>点击进入沉浸式聊天...</p>
-              </div>
-              <span class="time">Just now</span>
+            <div v-if="recentChats.length === 0" class="empty-chat-tip" style="text-align: center; color: #999; width: 100%; padding: 20px;">
+                暂无最近会话
             </div>
-  
-            <!-- 这里可以用 v-for 渲染 getPublicGroups 的前几个结果 -->
-            <div class="chat-card" v-for="i in 2" :key="i" @click="router.push('/chat')">
-              <div class="card-icon private-bg"><el-icon><User /></el-icon></div>
-              <div class="card-info">
-                <h4>示例好友 {{ i }}</h4>
-                <p>[图片] 昨晚的文件发我一下</p>
+            <div 
+                v-for="(chat, index) in recentChats" 
+                :key="index" 
+                class="chat-card" 
+                @click="handleChatClick(chat)"
+            >
+              <div :class="['card-icon', chat.isGroup ? 'group-bg' : 'private-bg']">
+                <el-icon v-if="chat.isGroup"><ChatDotRound /></el-icon>
+                <el-icon v-else><User /></el-icon>
               </div>
-              <span class="time">10 min ago</span>
+              <div class="card-info">
+                <h4>{{ chat.display_name }}</h4>
+                <p class="text-truncate" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    {{ chat.last_msg }}
+                </p>
+              </div>
+              <span class="time">{{ formatTimeAgo(chat.updated_at) }}</span>
             </div>
           </div>
   
@@ -117,7 +119,7 @@
             <button class="action-btn" @click="createVisible = true">
                 <el-icon><Plus /></el-icon> 创建群组
             </button>
-              <button class="action-btn outline" @click="router.push('/chat')">
+              <button class="action-btn outline" @click="router.push('/chat?action=add_friend')">
                 <el-icon><Search /></el-icon> 查找好友
               </button>
             </div>
@@ -147,29 +149,66 @@
   </template>
   
   <script setup lang="ts">
-  import { ref, reactive, onMounted, onUnmounted } from 'vue'
+  import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
   import { useRouter } from 'vue-router'
   import { Connection, MagicStick, ArrowRight, ChatDotRound, User, Plus, Search } from '@element-plus/icons-vue'
   import { useUserStore } from '../../store/user'
   import { useFriendStore } from '../../store/friend'
+  import { useChatStore } from '../../store/chat'
   import { askAI } from '../../api/chat'
-  import { ElMessage, ElMessageBox } from 'element-plus'
-  import { createGroup } from '../../api/group'
-  import { uploadFile } from '../../api/file'
-  const createVisible = ref(false)
-  const createForm = reactive({ name: '', notice: '', avatar: '' })
-  const createAvatarFile = ref<File | null>(null)
-  const router = useRouter()
-  const userStore = useUserStore()
-  const friendStore = useFriendStore()
+import { semanticSearch } from '../../api/ai'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { createGroup, getMyGroups } from '../../api/group'
+import { uploadFile } from '../../api/file'
 
-  const quickQuery = ref('')
-  const aiResponse = ref('')
+const createVisible = ref(false)
+const createForm = reactive({ name: '', notice: '', avatar: '' })
+const createAvatarFile = ref<File | null>(null)
+const router = useRouter()
+const userStore = useUserStore()
+const friendStore = useFriendStore()
+const chatStore = useChatStore()
 
-  onMounted(() => {
-    userStore.fetchUserInfo()
-    // 获取好友列表并启动实时更新
-    friendStore.startStatusPolling(30000) // 30秒更新一次
+const quickQuery = ref('')
+const aiResponse = ref('')
+const recentChats = ref<any[]>([])
+
+onMounted(async () => {
+  userStore.fetchUserInfo()
+  // 获取好友列表并启动实时更新
+  friendStore.startStatusPolling(30000) // 30秒更新一次
+  
+  // 加载群组和好友作为最近会话
+  try {
+      const groupsRes: any = await getMyGroups()
+      const groups = groupsRes.data || groupsRes || []
+      
+      // 确保好友列表已加载
+      if (friendStore.friends.length === 0) {
+          await friendStore.fetchFriends()
+      }
+        
+        // 简单的合并策略：取前2个群 + 前2个好友
+        const recentGroups = groups.slice(0, 2).map((g: any) => ({
+            ...g,
+            isGroup: true,
+            display_name: g.name,
+            last_msg: '点击进入群聊...',
+            updated_at: new Date().toISOString() // 模拟时间，实际应从后端获取
+        }))
+        
+        const recentFriends = friendStore.friends.slice(0, 2).map((f: any) => ({
+            ...f,
+            isGroup: false,
+            display_name: f.nickname || f.username,
+            last_msg: f.lastMsg || f.signature || '点击开始聊天...',
+            updated_at: new Date().toISOString()
+        }))
+        
+        recentChats.value = [...recentGroups, ...recentFriends]
+    } catch (e) {
+        console.error('Failed to load chats', e)
+    }
   })
 
   onUnmounted(() => {
@@ -177,6 +216,41 @@
     friendStore.stopStatusPolling()
   })
   
+  const handleQuickAsk = async () => {
+      if (!quickQuery.value.trim()) return
+      
+      aiResponse.value = 'AI 正在思考中...'
+      try {
+          // 默认搜索 ID=1 的群组 (公共大厅)
+          // 如果没有群组，则尝试搜索第一个好友
+          // TODO: 后续应支持选择搜索范围
+          let targetId = 1
+          let chatType = 2
+          
+          const res: any = await semanticSearch({
+              query: quickQuery.value,
+              target_id: targetId,
+              chat_type: chatType
+          })
+          
+          aiResponse.value = res.answer || res.data?.answer || 'AI 未能找到相关答案'
+      } catch (e) {
+          aiResponse.value = 'AI 服务暂时不可用'
+      }
+  }
+  
+  const handleChatClick = (chat: any) => {
+      // 设置当前会话并跳转
+      chatStore.currentChat = {
+          id: chat.ID || chat.id,
+          nickname: chat.display_name || chat.name || chat.nickname,
+          username: chat.username,
+          avatar: chat.avatar,
+          isGroup: chat.isGroup
+      }
+      router.push('/chat')
+  }
+
   const onCreateAvatarSelect = (e: Event) => {
     const file = (e.target as HTMLInputElement).files?.[0] || null
     if (file && !file.type.startsWith('image/')) {
@@ -218,17 +292,6 @@
         createForm.avatar = avatar
       })
     } catch (e) {}
-  }
-  const handleQuickAsk = async () => {
-    // if (!quickQuery.value) return
-    // const loadingMsg = ElMessage.info('AI 正在思考中...')
-    // try {
-    //   const res: any = await askAI(quickQuery.value,)
-    //   aiResponse.value = res.answer
-    //   loadingMsg.close()
-    // } catch (e) {
-    //   ElMessage.error('AI 服务暂时不可用')
-    // }
   }
   
   // 格式化时间显示

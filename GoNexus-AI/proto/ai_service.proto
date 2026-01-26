@@ -6,8 +6,20 @@ option go_package = "./;proto";
 service AIService {
   rpc SyncMessage (SyncRequest) returns (SyncResponse);
   rpc ChatSummary (SummaryRequest) returns (SummaryResponse);
+  rpc SuggestReply (SuggestRequest) returns (SuggestResponse);
   rpc SemanticSearch (SearchRequest) returns (SearchResponse);
   rpc RevokeMessage (RevokeRequest) returns (RevokeResponse);
+}
+
+message SuggestRequest {
+  string session_id = 1;
+  repeated string recent_messages = 2; // 最近的聊天记录 (e.g. "Alice: Hello", "Bob: Hi")
+  string my_name = 3; // 我的名字 (让AI知道我是谁，避免模仿对方说话)
+}
+
+message SuggestResponse {
+  int32 code = 1;
+  repeated string suggestions = 2;
 }
 
 message RevokeRequest {

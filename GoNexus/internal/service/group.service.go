@@ -128,40 +128,50 @@ func MuteMember(operatorID, groupID, targetID uint, muteState int) error {
 }
 
 // SetGroupAdmin 设置/取消管理员
-func SetGroupAdmin(ownerID, groupID, targetID uint, isAdmin bool) error {
-	// 1. 只有群主可以设置管理员
+func SetGroupAdmin(operatorID, groupID, memberID uint, isAdmin bool) error {
+	// 1. 检查操作者是否是群主
 	g, err := repository.GetGroupByID(groupID)
 	if err != nil {
 		return err
 	}
-	if g.OwnerID != ownerID {
+	if g.OwnerID != operatorID {
 		return errors.New("仅群主可设置管理员")
 	}
 
-	// 2. 目标角色
+	// 2. 检查目标是否是群成员
+	if !repository.CheckGroupMember(groupID, memberID) {
+		return errors.New("目标不是群成员")
+	}
+
+	// 3. 设置角色
+	// 3 = 群主, 2 = 管理员, 1 = 普通成员
 	role := 1
 	if isAdmin {
 		role = 2
 	}
-
-	return repository.UpdateMemberRole(groupID, targetID, role)
+	return repository.UpdateMemberRole(groupID, memberID, role)
 }
 
 // TransferGroupOwner 转让群主
-func TransferGroupOwner(ownerID, groupID, targetID uint) error {
-	// 1. 只有群主可以转让
+func TransferGroupOwner(operatorID, groupID, newOwnerID uint) error {
+	// 1. 检查操作者是否是群主
 	g, err := repository.GetGroupByID(groupID)
 	if err != nil {
 		return err
 	}
-	if g.OwnerID != ownerID {
-		return errors.New("仅群主可转让群组")
+	if g.OwnerID != operatorID {
+		return errors.New("仅群主可转让群")
 	}
 
-	// 2. 目标必须是群成员
-	if !repository.CheckGroupMember(groupID, targetID) {
-		return errors.New("目标用户不在群内")
+	// 2. 检查新群主是否是群成员
+	if !repository.CheckGroupMember(groupID, newOwnerID) {
+		return errors.New("目标不是群成员")
 	}
 
-	return repository.TransferGroupOwner(groupID, ownerID, targetID)
+	if operatorID == newOwnerID {
+		return errors.New("不能转让自己")
+	}
+
+	// 3. 执行转让事务
+	return repository.TransferGroupOwner(groupID, operatorID, newOwnerID)
 }

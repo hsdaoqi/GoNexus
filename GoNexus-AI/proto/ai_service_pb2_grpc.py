@@ -44,6 +44,11 @@ class AIServiceStub(object):
                 request_serializer=ai__service__pb2.SummaryRequest.SerializeToString,
                 response_deserializer=ai__service__pb2.SummaryResponse.FromString,
                 _registered_method=True)
+        self.SuggestReply = channel.unary_unary(
+                '/proto.AIService/SuggestReply',
+                request_serializer=ai__service__pb2.SuggestRequest.SerializeToString,
+                response_deserializer=ai__service__pb2.SuggestResponse.FromString,
+                _registered_method=True)
         self.SemanticSearch = channel.unary_unary(
                 '/proto.AIService/SemanticSearch',
                 request_serializer=ai__service__pb2.SearchRequest.SerializeToString,
@@ -66,6 +71,12 @@ class AIServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ChatSummary(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SuggestReply(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -95,6 +106,11 @@ def add_AIServiceServicer_to_server(servicer, server):
                     servicer.ChatSummary,
                     request_deserializer=ai__service__pb2.SummaryRequest.FromString,
                     response_serializer=ai__service__pb2.SummaryResponse.SerializeToString,
+            ),
+            'SuggestReply': grpc.unary_unary_rpc_method_handler(
+                    servicer.SuggestReply,
+                    request_deserializer=ai__service__pb2.SuggestRequest.FromString,
+                    response_serializer=ai__service__pb2.SuggestResponse.SerializeToString,
             ),
             'SemanticSearch': grpc.unary_unary_rpc_method_handler(
                     servicer.SemanticSearch,
@@ -161,6 +177,33 @@ class AIService(object):
             '/proto.AIService/ChatSummary',
             ai__service__pb2.SummaryRequest.SerializeToString,
             ai__service__pb2.SummaryResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SuggestReply(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/proto.AIService/SuggestReply',
+            ai__service__pb2.SuggestRequest.SerializeToString,
+            ai__service__pb2.SuggestResponse.FromString,
             options,
             channel_credentials,
             insecure,

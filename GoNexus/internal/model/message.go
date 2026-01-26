@@ -7,7 +7,7 @@ const (
 	MsgTypeText  = 1 // 文本
 	MsgTypeImage = 2 // 图片
 	MsgTypeAudio = 3 // 语音
-	MsgTypeFile  = 9 // 文件 (与 DTO 保持一致)
+	MsgTypeFile  = 4 // 文件
 
 	// 聊天类型 (复试考点: 区分单聊群聊)
 	ChatTypePrivate = 1 // 单聊

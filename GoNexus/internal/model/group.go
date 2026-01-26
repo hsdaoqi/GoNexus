@@ -11,6 +11,7 @@ type Group struct {
 	Notice      string `json:"notice" gorm:"type:varchar(255);comment:群公告"`
 	Type        int    `json:"type" gorm:"type:int;commit:群类型"` //1.普通群，2公共大厅
 	UnreadCount int    `json:"unread_count" gorm:"-"`           // 未读数 (仅内存)
+	LastMsg     string `json:"last_msg" gorm:"-"`               // 最后一条消息
 }
 
 // GroupMember 群成员关系表

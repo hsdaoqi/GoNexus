@@ -2,9 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v6.33.2
-// source: internal/api/proto/ai_service.proto
-
-//protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative ./internal/api/proto/ai_service.proto
+// source: ai_service.proto
 
 package proto
 
@@ -23,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	AIService_SyncMessage_FullMethodName    = "/proto.AIService/SyncMessage"
 	AIService_ChatSummary_FullMethodName    = "/proto.AIService/ChatSummary"
+	AIService_SuggestReply_FullMethodName   = "/proto.AIService/SuggestReply"
 	AIService_SemanticSearch_FullMethodName = "/proto.AIService/SemanticSearch"
 	AIService_RevokeMessage_FullMethodName  = "/proto.AIService/RevokeMessage"
 )
@@ -30,16 +29,11 @@ const (
 // AIServiceClient is the client API for AIService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-//
-// 定义服务：Go 可以调用的 Python 方法
 type AIServiceClient interface {
-	// 1. 同步消息 (Go -> Python 记笔记)
 	SyncMessage(ctx context.Context, in *SyncRequest, opts ...grpc.CallOption) (*SyncResponse, error)
-	// 2. 智能总结 (Go -> Python 求总结)
 	ChatSummary(ctx context.Context, in *SummaryRequest, opts ...grpc.CallOption) (*SummaryResponse, error)
-	// 3. 语义搜索 (Go -> Python 问问题)
+	SuggestReply(ctx context.Context, in *SuggestRequest, opts ...grpc.CallOption) (*SuggestResponse, error)
 	SemanticSearch(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error)
-	// 4. 撤回消息 (Go -> Python 删记忆)
 	RevokeMessage(ctx context.Context, in *RevokeRequest, opts ...grpc.CallOption) (*RevokeResponse, error)
 }
 
@@ -71,6 +65,16 @@ func (c *aIServiceClient) ChatSummary(ctx context.Context, in *SummaryRequest, o
 	return out, nil
 }
 
+func (c *aIServiceClient) SuggestReply(ctx context.Context, in *SuggestRequest, opts ...grpc.CallOption) (*SuggestResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SuggestResponse)
+	err := c.cc.Invoke(ctx, AIService_SuggestReply_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *aIServiceClient) SemanticSearch(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SearchResponse)
@@ -94,16 +98,11 @@ func (c *aIServiceClient) RevokeMessage(ctx context.Context, in *RevokeRequest, 
 // AIServiceServer is the server API for AIService service.
 // All implementations must embed UnimplementedAIServiceServer
 // for forward compatibility.
-//
-// 定义服务：Go 可以调用的 Python 方法
 type AIServiceServer interface {
-	// 1. 同步消息 (Go -> Python 记笔记)
 	SyncMessage(context.Context, *SyncRequest) (*SyncResponse, error)
-	// 2. 智能总结 (Go -> Python 求总结)
 	ChatSummary(context.Context, *SummaryRequest) (*SummaryResponse, error)
-	// 3. 语义搜索 (Go -> Python 问问题)
+	SuggestReply(context.Context, *SuggestRequest) (*SuggestResponse, error)
 	SemanticSearch(context.Context, *SearchRequest) (*SearchResponse, error)
-	// 4. 撤回消息 (Go -> Python 删记忆)
 	RevokeMessage(context.Context, *RevokeRequest) (*RevokeResponse, error)
 	mustEmbedUnimplementedAIServiceServer()
 }
@@ -120,6 +119,9 @@ func (UnimplementedAIServiceServer) SyncMessage(context.Context, *SyncRequest) (
 }
 func (UnimplementedAIServiceServer) ChatSummary(context.Context, *SummaryRequest) (*SummaryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ChatSummary not implemented")
+}
+func (UnimplementedAIServiceServer) SuggestReply(context.Context, *SuggestRequest) (*SuggestResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SuggestReply not implemented")
 }
 func (UnimplementedAIServiceServer) SemanticSearch(context.Context, *SearchRequest) (*SearchResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SemanticSearch not implemented")
@@ -184,6 +186,24 @@ func _AIService_ChatSummary_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AIService_SuggestReply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SuggestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AIServiceServer).SuggestReply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AIService_SuggestReply_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AIServiceServer).SuggestReply(ctx, req.(*SuggestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AIService_SemanticSearch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SearchRequest)
 	if err := dec(in); err != nil {
@@ -236,6 +256,10 @@ var AIService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AIService_ChatSummary_Handler,
 		},
 		{
+			MethodName: "SuggestReply",
+			Handler:    _AIService_SuggestReply_Handler,
+		},
+		{
 			MethodName: "SemanticSearch",
 			Handler:    _AIService_SemanticSearch_Handler,
 		},
@@ -245,5 +269,5 @@ var AIService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "internal/api/proto/ai_service.proto",
+	Metadata: "ai_service.proto",
 }

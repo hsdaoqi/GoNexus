@@ -21,8 +21,6 @@ func SaveMessage(proto *dto.ProtocolMsg) error {
 		MsgType:    proto.Type,
 		Content:    proto.Content,
 		Url:        proto.Url,
-		FileName:   proto.FileName,
-		FileSize:   proto.FileSize,
 	}
 	// 2. 落库
 	if err := repository.SaveMessage(dbMsg); err != nil {

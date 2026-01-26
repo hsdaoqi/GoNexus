@@ -127,7 +127,7 @@ func KickMember(c *gin.Context) {
 	response.Success(c, "移除成功")
 }
 
-// MuteMember 禁言成员
+// MuteMember 禁言接口
 func MuteMember(c *gin.Context) {
 	var req MuteMemberReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -139,7 +139,18 @@ func MuteMember(c *gin.Context) {
 		response.FailWithMessage(c, response.ErrSystemError, err.Error())
 		return
 	}
-	response.Success(c, nil)
+	response.Success(c, "操作成功")
+}
+
+type SetAdminReq struct {
+	GroupID  uint `json:"group_id" binding:"required"`
+	MemberID uint `json:"member_id" binding:"required"`
+	IsAdmin  bool `json:"is_admin"`
+}
+
+type TransferGroupReq struct {
+	GroupID  uint `json:"group_id" binding:"required"`
+	MemberID uint `json:"member_id" binding:"required"`
 }
 
 // SetAdmin 设置管理员
@@ -154,7 +165,7 @@ func SetAdmin(c *gin.Context) {
 		response.FailWithMessage(c, response.ErrSystemError, err.Error())
 		return
 	}
-	response.Success(c, nil)
+	response.Success(c, "操作成功")
 }
 
 // TransferGroup 转让群主
@@ -169,5 +180,5 @@ func TransferGroup(c *gin.Context) {
 		response.FailWithMessage(c, response.ErrSystemError, err.Error())
 		return
 	}
-	response.Success(c, nil)
+	response.Success(c, "转让成功")
 }

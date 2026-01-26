@@ -1,25 +1,26 @@
 syntax = "proto3";
-//protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative ./internal/api/proto/ai_service.proto
 package proto;
-
 option go_package = "./;proto";
+//python -m grpc_tools.protoc -I./proto --python_out=./proto --grpc_python_out=./proto ./proto/ai_service.proto
 
-// 定义服务：Go 可以调用的 Python 方法
 service AIService {
-  // 1. 同步消息 (Go -> Python 记笔记)
   rpc SyncMessage (SyncRequest) returns (SyncResponse);
-
-  // 2. 智能总结 (Go -> Python 求总结)
   rpc ChatSummary (SummaryRequest) returns (SummaryResponse);
-
-  // 3. 语义搜索 (Go -> Python 问问题)
+  rpc SuggestReply (SuggestRequest) returns (SuggestResponse);
   rpc SemanticSearch (SearchRequest) returns (SearchResponse);
-
-  // 4. 撤回消息 (Go -> Python 删记忆)
   rpc RevokeMessage (RevokeRequest) returns (RevokeResponse);
 }
 
-// --- 数据结构 ---
+message SuggestRequest {
+  string session_id = 1;
+  repeated string recent_messages = 2; // 最近的聊天记录 (e.g. "Alice: Hello", "Bob: Hi")
+  string my_name = 3; // 我的名字 (让AI知道我是谁，避免模仿对方说话)
+}
+
+message SuggestResponse {
+  int32 code = 1;
+  repeated string suggestions = 2;
+}
 
 message RevokeRequest {
   string msg_id = 1;
@@ -34,8 +35,8 @@ message SyncRequest {
   uint32 user_id = 1;
   string content = 2;
   string msg_id = 3;
-  string nickname = 4;//昵称
-  string session_id = 5; // 会话ID (例如 "p_1_2" 或 "g_100")
+  string nickname = 4; // 包含昵称
+  string session_id = 5; //会话ID (例如 "p_1_2" 或 "g_100")
 }
 
 message SyncResponse {
@@ -55,7 +56,7 @@ message SummaryResponse {
 message SearchRequest {
   string query = 1;
   int32 limit = 2;
-  string session_id = 3; // 只在这个会话里搜
+  string session_id = 3; //只在这个会话里搜
 }
 
 message SearchResponse {

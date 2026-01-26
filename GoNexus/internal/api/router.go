@@ -49,14 +49,18 @@ func InitRouter() *gin.Engine {
 		chatGroup := privateGroup.Group("/chat")
 		{
 			chatGroup.GET("/history", v1.GetChatHistory)
-			chatGroup.POST("/revoke", v1.RevokeMessage)
-			chatGroup.POST("/read", v1.ReadMessage)
+			chatGroup.POST("revoke", v1.RevokeMessage)
+			chatGroup.POST("read", v1.ReadMessage)
 		}
 
 		aiGroup := privateGroup.Group("/ai")
 		{
 			// GET /api/v1/ai/search?query=刚才谁说了去吃火锅
 			aiGroup.GET("/search", v1.SemanticSearch)
+			// GET /api/v1/ai/summary?target_id=1&chat_type=1
+			aiGroup.GET("/summary", v1.ChatSummary)
+			// GET /api/v1/ai/suggest?target_id=1&chat_type=1
+			aiGroup.GET("/suggest", v1.ReplySuggestion)
 		}
 		//文件上传
 		fileGroup := privateGroup.Group("/file")

@@ -114,3 +114,32 @@ class RAGEngine:
             messages=[{"role": "user", "content": prompt}]
         )
         return response.choices[0].message.content
+
+    # 回复建议
+    def reply_suggestion(self, recent_messages: list, my_name: str):
+        context = "\n".join(recent_messages)
+        prompt = f"""
+        你是一个聊天助手。请根据以下对话记录，为【{my_name}】生成 3 个简短、自然、得体的回复建议。
+        
+        要求：
+        1. 回复要符合语境。
+        2. 每个建议不超过 15 个字。
+        3. 直接返回 3 个建议，用 "|" 分隔，不要包含序号或其他废话。
+        
+        【对话记录】：
+        {context}
+        """
+        
+        print(f"💡 [建议] 为 {my_name} 生成回复建议...")
+        response = self.ai_client.chat.completions.create(
+            model=settings.MODEL_NAME,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        content = response.choices[0].message.content.strip()
+        # 清理可能产生的额外字符
+        suggestions = [s.strip() for s in content.split('|') if s.strip()]
+        # 如果 AI 没按格式返回，尝试用换行符分割
+        if len(suggestions) < 2 and '\n' in content:
+             suggestions = [s.strip() for s in content.split('\n') if s.strip()]
+             
+        return suggestions[:3] # 确保只返回前3个

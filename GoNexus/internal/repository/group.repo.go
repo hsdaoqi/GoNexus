@@ -35,8 +35,19 @@ func GetJoinedGroups(userID uint) ([]model.Group, error) {
 	var groups []model.Group
 	// 联表查询：从 group_members 表反查 groups 表
 	// 使用表别名 g / gm，避免 MySQL 对保留字 `groups` 解析出错
+	// 子查询：获取最后一条消息
+	lastMsgQuery := `(SELECT CASE 
+		WHEN msg_type = 1 THEN content 
+		WHEN msg_type = 2 THEN '[图片]' 
+		WHEN msg_type = 3 THEN '[语音]' 
+		ELSE '[文件]' END 
+		FROM messages 
+		WHERE chat_type = 2 AND to_user_id = g.id 
+		AND deleted_at IS NULL 
+		ORDER BY created_at DESC LIMIT 1) as last_msg`
+
 	err := global.DB.Table("`groups` AS g").
-		Select("g.*, gm.unread_count").
+		Select("g.*, gm.unread_count, "+lastMsgQuery).
 		Joins("JOIN group_members AS gm ON gm.group_id = g.id").
 		Where("gm.user_id = ?", userID).
 		Find(&groups).Error
@@ -124,6 +135,20 @@ func IsMemberMuted(groupID, userID uint) (bool, error) {
 	return member.Muted == 1, nil
 }
 
+// IncrementGroupUnread 增加群未读数
+func IncrementGroupUnread(groupID, senderID uint) error {
+	return global.DB.Model(&model.GroupMember{}).
+		Where("group_id = ? AND user_id != ?", groupID, senderID).
+		UpdateColumn("unread_count", gorm.Expr("unread_count + ?", 1)).Error
+}
+
+// ClearGroupUnread 清除群未读数
+func ClearGroupUnread(userID, groupID uint) error {
+	return global.DB.Model(&model.GroupMember{}).
+		Where("group_id = ? AND user_id = ?", groupID, userID).
+		Update("unread_count", 0).Error
+}
+
 // UpdateMemberRole 更新成员角色
 func UpdateMemberRole(groupID, userID uint, role int) error {
 	return global.DB.Model(&model.GroupMember{}).
@@ -155,18 +180,4 @@ func TransferGroupOwner(groupID, oldOwnerID, newOwnerID uint) error {
 
 		return nil
 	})
-}
-
-// IncrementGroupUnread 增加群未读数
-func IncrementGroupUnread(groupID, senderID uint) error {
-	return global.DB.Model(&model.GroupMember{}).
-		Where("group_id = ? AND user_id != ?", groupID, senderID).
-		UpdateColumn("unread_count", gorm.Expr("unread_count + ?", 1)).Error
-}
-
-// ClearGroupUnread 清除群未读数
-func ClearGroupUnread(userID, groupID uint) error {
-	return global.DB.Model(&model.GroupMember{}).
-		Where("group_id = ? AND user_id = ?", groupID, userID).
-		Update("unread_count", 0).Error
 }

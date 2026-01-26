@@ -68,7 +68,8 @@ export const useFriendStore = defineStore('friend', {
             location: friend.location || '',
             isOnline: friend.is_online || friend.isOnline || false,
             lastSeen: friend.last_seen || friend.lastSeen || new Date().toISOString(),
-            unreadCount: friend.unread_count || 0
+            unreadCount: friend.unread_count || 0,
+            lastMsg: friend.last_msg || ''
           }
         })
 

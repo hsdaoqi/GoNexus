@@ -26,8 +26,20 @@ func GetFriendList(userID uint) ([]model.UserProfileResponse, error) {
 
 	//逻辑：查 users 表，条件是 users.id 必须在 friends 表里出现，且对应的 user_id 是我
 	//添加条件过滤软删除的好友记录
+	// 增加子查询：获取最后一条消息
+	lastMsgQuery := `(SELECT CASE 
+		WHEN msg_type = 1 THEN content 
+		WHEN msg_type = 2 THEN '[图片]' 
+		WHEN msg_type = 3 THEN '[语音]' 
+		ELSE '[文件]' END 
+		FROM messages 
+		WHERE ((from_user_id = users.id AND to_user_id = ? AND chat_type = 1) 
+		OR (from_user_id = ? AND to_user_id = users.id AND chat_type = 1))
+		AND deleted_at IS NULL 
+		ORDER BY created_at DESC LIMIT 1) as last_msg`
+
 	err := global.DB.Table("users").
-		Select("users.*, friends.unread_count").
+		Select("users.*, friends.unread_count, "+lastMsgQuery, userID, userID).
 		Joins("JOIN friends on friends.friend_id = users.id").
 		Where("friends.user_id = ? AND friends.deleted_at IS NULL", userID).
 		Find(&friends).Error
