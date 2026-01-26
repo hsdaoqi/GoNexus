@@ -2,26 +2,7 @@
     <div class="dashboard-container">
       
       <!-- 1. 顶部导航 -->
-      <header class="navbar">
-        <div class="brand">
-          <div class="logo-icon"><el-icon><Connection /></el-icon></div>
-          <span class="brand-name">GoNexus</span>
-        </div>
-        <div class="user-menu">
-          <el-dropdown>
-            <div class="avatar-box">
-              <el-avatar :size="36" :src="userStore.userInfo.avatar" />
-              <span class="name">{{ userStore.userInfo.nickname || userStore.userInfo.username }}</span>
-            </div>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item @click="router.push('/profile')">个人信息</el-dropdown-item>
-                <el-dropdown-item @click="handleLogout">退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </header>
+      <GlobalNavbar />
   
       <div class="main-layout">
         <!-- 2. 左侧：主要内容区 -->
@@ -150,7 +131,8 @@
   
   <script setup lang="ts">
   import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
-  import { useRouter } from 'vue-router'
+  import { useRouter, useRoute } from 'vue-router'
+  import GlobalNavbar from '@/components/GlobalNavbar.vue'
   import { Connection, MagicStick, ArrowRight, ChatDotRound, User, Plus, Search } from '@element-plus/icons-vue'
   import { useUserStore } from '../../store/user'
   import { useFriendStore } from '../../store/friend'
@@ -165,6 +147,7 @@ const createVisible = ref(false)
 const createForm = reactive({ name: '', notice: '', avatar: '' })
 const createAvatarFile = ref<File | null>(null)
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const friendStore = useFriendStore()
 const chatStore = useChatStore()
@@ -314,13 +297,6 @@ onMounted(async () => {
     if (diffMin < 60) return `${diffMin}分钟前`
     return '实时'
   }
-
-  const handleLogout = () => {
-    localStorage.clear()
-    userStore.clearUser()
-    friendStore.clearFriends()
-    router.push('/login')
-  }
   </script>
   
   <style scoped>
@@ -332,23 +308,6 @@ onMounted(async () => {
     font-family: 'Inter', sans-serif;
     color: #1e293b;
   }
-  
-  /* Navbar */
-  .navbar {
-    height: 64px;
-    background: white;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 40px;
-    position: sticky; top: 0; z-index: 100;
-  }
-  .brand { display: flex; align-items: center; gap: 10px; }
-  .logo-icon { width: 32px; height: 32px; background: #3b82f6; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-  .brand-name { font-weight: 700; font-size: 20px; letter-spacing: -0.5px; }
-  .avatar-box { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-  .name { font-weight: 500; font-size: 14px; }
   
   /* Layout */
   .main-layout {

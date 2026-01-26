@@ -81,6 +81,16 @@ func InitRouter() *gin.Engine {
 			groupGroup.POST("/admin", v1.SetAdmin)         // 设置管理员
 			groupGroup.POST("/transfer", v1.TransferGroup) // 转让群主
 		}
+
+		// 动态广场路由
+		momentGroup := privateGroup.Group("/moment")
+		{
+			momentGroup.POST("/post", v1.CreatePost)       // 发布动态
+			momentGroup.GET("/list", v1.GetMoments)        // 获取动态列表
+			momentGroup.POST("/comment", v1.CreateComment) // 评论
+			momentGroup.GET("/comments", v1.GetComments)   // 获取评论
+			momentGroup.POST("/like", v1.ToggleLike)       // 点赞/取消
+		}
 	}
 	return r
 }

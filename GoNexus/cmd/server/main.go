@@ -5,6 +5,7 @@ import (
 	"go-nexus/internal/api"
 	"go-nexus/internal/core"
 	"go-nexus/internal/core/socket"
+	"go-nexus/internal/model"
 	"go-nexus/pkg/global"
 	"go-nexus/pkg/initialize"
 )
@@ -21,7 +22,7 @@ func main() {
 	//global.DB.AutoMigrate(&model.FriendRequest{})
 	//global.DB.AutoMigrate(&model.Group{})
 	//global.DB.AutoMigrate(&model.GroupMember{})
-	//global.DB.AutoMigrate(&model.GroupMember{})
+	global.DB.AutoMigrate(&model.Post{}, &model.Comment{}, &model.Like{})
 	//初始化路由
 	r := api.InitRouter()
 

@@ -28,10 +28,15 @@ const routes = [
   },
   {
     path: '/profile',
-    name: 'Profile',
-    component: () => import('../views/profile/index.vue')
-  },
-]
+      name: 'Profile',
+      component: () => import('../views/profile/index.vue')
+    },
+    {
+      path: '/moments',
+      name: 'Moments',
+      component: () => import('../views/moments/index.vue')
+    },
+  ]
 
 const router = createRouter({
   history: createWebHistory(),
