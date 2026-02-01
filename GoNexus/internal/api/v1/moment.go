@@ -115,5 +115,9 @@ func ToggleLike(c *gin.Context) {
 	if !isLiked {
 		msg = "取消点赞"
 	}
-	response.Success(c, gin.H{"is_liked": isLiked, "like_count": likeCount, "msg": msg})
+	response.Success(c, gin.H{
+		"is_liked":   isLiked,
+		"like_count": likeCount,
+		"msg":        msg,
+	})
 }

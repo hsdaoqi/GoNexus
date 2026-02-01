@@ -14,7 +14,7 @@ type Post struct {
 	User   User `gorm:"foreignKey:UserID" json:"user"`
 
 	Content string `gorm:"type:text;comment:动态内容"`
-	
+
 	// Media 存储图片/视频URL列表，JSON格式
 	Media string `gorm:"type:json;comment:媒体资源URL列表(JSON)"`
 

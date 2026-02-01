@@ -123,7 +123,20 @@
             <el-radio :label="2">私密</el-radio>
           </el-radio-group>
         </el-form-item>
-        <!-- 这里可以加图片上传组件，暂时省略 -->
+        <el-form-item label="配图">
+          <el-upload
+            v-model:file-list="fileList"
+            action="http://localhost:8080/api/v1/file/upload"
+            :headers="uploadHeaders"
+            list-type="picture-card"
+            :on-success="handleUploadSuccess"
+            :on-remove="handleRemove"
+            :limit="9"
+            name="file"
+          >
+            <el-icon><Plus /></el-icon>
+          </el-upload>
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -137,11 +150,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 import GlobalNavbar from '@/components/GlobalNavbar.vue'
-import { EditPen, Star, StarFilled, ChatDotSquare } from '@element-plus/icons-vue'
+import { EditPen, Star, StarFilled, ChatDotSquare, Plus } from '@element-plus/icons-vue'
 import { getMoments, createPost, toggleLike, createComment, getComments, type Post as ApiPost } from '@/api/moment'
-import { ElMessage } from 'element-plus'
+import { ElMessage, type UploadProps, type UploadUserFile } from 'element-plus'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
@@ -170,6 +183,32 @@ const createForm = reactive({
   visibility: 0,
   media: [] as string[]
 })
+
+const fileList = ref<UploadUserFile[]>([])
+
+const uploadHeaders = computed(() => {
+  return {
+    Authorization: `Bearer ${localStorage.getItem('token')}`
+  }
+})
+
+const handleRemove: UploadProps['onRemove'] = (uploadFile) => {
+  if (uploadFile.response && (uploadFile.response as any).data) {
+    const url = (uploadFile.response as any).data.url
+    const index = createForm.media.indexOf(url)
+    if (index !== -1) {
+      createForm.media.splice(index, 1)
+    }
+  }
+}
+
+const handleUploadSuccess: UploadProps['onSuccess'] = (response) => {
+  if (response.code === 200) {
+    createForm.media.push(response.data.url)
+  } else {
+    ElMessage.error(response.msg || '上传失败')
+  }
+}
 
 const switchTab = (tab: string) => {
   if (activeTab.value === tab) return
@@ -210,6 +249,7 @@ const loadMore = () => {
 }
 
 const submitPost = async () => {
+  if (submitting.value) return
   if (!createForm.content.trim()) {
     ElMessage.warning('请输入内容')
     return
@@ -225,6 +265,7 @@ const submitPost = async () => {
     showCreateDialog.value = false
     createForm.content = ''
     createForm.media = []
+    fileList.value = []
     // 刷新列表
     page.value = 1
     posts.value = []
