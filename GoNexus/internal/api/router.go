@@ -44,6 +44,7 @@ func InitRouter() *gin.Engine {
 			friendGroup.GET("/list", v1.GetFriendList)
 			friendGroup.GET("/pending", v1.GetPendingRequests)
 			friendGroup.POST("/delete", v1.DeleteFriendRecord)
+			friendGroup.GET("/recommend", v1.RecommendFriends) // 新增推荐接口
 		}
 		// 聊天相关路由
 		chatGroup := privateGroup.Group("/chat")
@@ -85,11 +86,13 @@ func InitRouter() *gin.Engine {
 		// 动态广场路由
 		momentGroup := privateGroup.Group("/moment")
 		{
-			momentGroup.POST("/post", v1.CreatePost)       // 发布动态
-			momentGroup.GET("/list", v1.GetMoments)        // 获取动态列表
-			momentGroup.POST("/comment", v1.CreateComment) // 评论
-			momentGroup.GET("/comments", v1.GetComments)   // 获取评论
-			momentGroup.POST("/like", v1.ToggleLike)       // 点赞/取消
+			momentGroup.POST("/post", v1.CreatePost)             // 发布动态
+			momentGroup.GET("/list", v1.GetMoments)              // 获取动态列表
+			momentGroup.DELETE("/post/:id", v1.DeletePost)       // 删除动态
+			momentGroup.POST("/comment", v1.CreateComment)       // 评论
+			momentGroup.GET("/comments", v1.GetComments)         // 获取评论
+			momentGroup.DELETE("/comment/:id", v1.DeleteComment) // 删除评论
+			momentGroup.POST("/like", v1.ToggleLike)             // 点赞/取消
 		}
 	}
 	return r

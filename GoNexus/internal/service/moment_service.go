@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"go-nexus/internal/model"
 	"go-nexus/internal/model/dto"
 	"go-nexus/internal/repository"
@@ -165,4 +166,38 @@ func (s *MomentService) GetComments(postID uint) ([]dto.CommentResponse, error) 
 // ToggleLike 点赞
 func (s *MomentService) ToggleLike(userID uint, req dto.LikePostRequest) (bool, int, error) {
 	return repository.MomentRepo.ToggleLike(req.PostID, userID)
+}
+
+// DeletePost 删除动态
+func (s *MomentService) DeletePost(userID uint, postID uint) error {
+	post, err := repository.MomentRepo.GetPostByID(postID)
+	if err != nil {
+		return err
+	}
+	// 权限检查
+	if post.UserID != userID {
+		return errors.New("无权删除此动态")
+	}
+	return repository.MomentRepo.DeletePost(postID)
+}
+
+// DeleteComment 删除评论
+func (s *MomentService) DeleteComment(userID uint, commentID uint) error {
+	comment, err := repository.MomentRepo.GetCommentByID(commentID)
+	if err != nil {
+		return err
+	}
+
+	// 权限检查: 评论作者 OR 动态作者
+	if comment.UserID != userID {
+		post, err := repository.MomentRepo.GetPostByID(comment.PostID)
+		if err != nil {
+			return err
+		}
+		if post.UserID != userID {
+			return errors.New("无权删除此评论")
+		}
+	}
+
+	return repository.MomentRepo.DeleteComment(comment)
 }

@@ -70,7 +70,36 @@ func (r *MomentRepository) GetPosts(scope string, userID uint, page, pageSize in
 
 // DeletePost 删除动态
 func (r *MomentRepository) DeletePost(id uint) error {
-	return global.DB.Delete(&model.Post{}, id).Error
+	return global.DB.Transaction(func(tx *gorm.DB) error {
+		// 删除相关的点赞
+		if err := tx.Where("post_id = ?", id).Delete(&model.Like{}).Error; err != nil {
+			return err
+		}
+		// 删除相关的评论
+		if err := tx.Where("post_id = ?", id).Delete(&model.Comment{}).Error; err != nil {
+			return err
+		}
+		// 删除动态本身
+		return tx.Delete(&model.Post{}, id).Error
+	})
+}
+
+// GetCommentByID 获取单条评论
+func (r *MomentRepository) GetCommentByID(id uint) (*model.Comment, error) {
+	var comment model.Comment
+	err := global.DB.Preload("User").First(&comment, id).Error
+	return &comment, err
+}
+
+// DeleteComment 删除评论
+func (r *MomentRepository) DeleteComment(comment *model.Comment) error {
+	return global.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Delete(comment).Error; err != nil {
+			return err
+		}
+		// 更新评论计数
+		return tx.Model(&model.Post{}).Where("id = ?", comment.PostID).UpdateColumn("comment_count", gorm.Expr("comment_count - ?", 1)).Error
+	})
 }
 
 // CreateComment 发表评论

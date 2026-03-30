@@ -137,3 +137,14 @@ func GetPendingRequests(c *gin.Context) {
 
 	response.Success(c, requests)
 }
+
+// RecommendFriends 推荐好友
+func RecommendFriends(c *gin.Context) {
+	userID := c.MustGet("userID").(uint)
+	list, err := service.RecommendFriends(userID)
+	if err != nil {
+		response.FailWithMessage(c, response.ErrBusiness, "获取推荐失败: "+err.Error())
+		return
+	}
+	response.Success(c, list)
+}

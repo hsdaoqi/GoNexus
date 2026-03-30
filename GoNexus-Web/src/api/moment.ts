@@ -80,3 +80,19 @@ export function toggleLike(post_id: number) {
     data: { post_id }
   })
 }
+
+// 删除动态
+export function deletePost(id: number) {
+  return request({
+    url: `/moment/post/${id}`,
+    method: 'delete'
+  })
+}
+
+// 删除评论
+export function deleteComment(id: number) {
+  return request({
+    url: `/moment/comment/${id}`,
+    method: 'delete'
+  })
+}

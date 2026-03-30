@@ -42,3 +42,11 @@ export const deleteFriend = (data: { friend_id: number }) => {
     data
   })
 }
+
+// 获取推荐好友
+export const getRecommendedFriends = () => {
+  return request({
+    url: '/friend/recommend',
+    method: 'get'
+  })
+}

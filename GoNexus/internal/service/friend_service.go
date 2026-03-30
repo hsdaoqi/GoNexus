@@ -2,10 +2,13 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"go-nexus/internal/model"
 	"go-nexus/internal/model/dto"
 	"go-nexus/internal/repository"
 	"go-nexus/pkg/global"
+	"sort"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -183,4 +186,113 @@ func DeleteFriendRecord(userID, FriendID uint) error {
 // GetPendingRequests 获取待处理的好友请求
 func GetPendingRequests(userID uint) ([]dto.FriendRequestResponse, error) {
 	return repository.GetPendingRequests(userID)
+}
+
+// RecommendFriends 推荐好友算法
+func RecommendFriends(userID uint) ([]dto.RecommendResponse, error) {
+	// 1. 获取我的好友ID列表
+	myFriendIDs, err := repository.GetFriendIDs(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. 获取我的信息 (为了拿 Tags)
+	me, err := repository.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. 获取二度好友 (Candidates) 及其出现频次
+	// Map[FriendID]Count
+	candidateMap, err := repository.GetSecondDegreeFriends(myFriendIDs, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. 过滤掉已经是好友的人 (虽然 SQL 里过滤了，但为了双重保险和扩展性，这里再处理一下)
+	// 同时准备 IDs 用于查询详情
+	finalCandidateIDs := make([]uint, 0)
+	friendSet := make(map[uint]bool)
+	for _, id := range myFriendIDs {
+		friendSet[id] = true
+	}
+	// 还要过滤掉自己
+	friendSet[userID] = true
+
+	for id := range candidateMap {
+		if !friendSet[id] {
+			finalCandidateIDs = append(finalCandidateIDs, id)
+		}
+	}
+
+	// 5. 获取候选人详情 (Tags)
+	users, err := repository.GetUsersByIDs(finalCandidateIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// 6. 计算得分
+	var recommendations []dto.RecommendResponse
+
+	for _, u := range users {
+		commonFriendsCount := candidateMap[u.ID]
+
+		// 计算共同 Tags
+		commonTags := intersectTags(me.Tags, u.Tags)
+
+		// 算法公式
+		// Score = 共同好友 * 5 + 共同标签 * 3
+		// 可以根据实际情况调整权重
+		score := commonFriendsCount*5 + len(commonTags)*3
+
+		// 构建推荐理由
+		var reasons []string
+		if commonFriendsCount > 0 {
+			reasons = append(reasons, fmt.Sprintf("%d位共同好友", commonFriendsCount))
+		}
+		if len(commonTags) > 0 {
+			reasons = append(reasons, fmt.Sprintf("共同兴趣: %s", strings.Join(commonTags, ",")))
+		}
+		reasonStr := strings.Join(reasons, " | ")
+		if reasonStr == "" {
+			reasonStr = "缘分推荐"
+		}
+
+		recommendations = append(recommendations, dto.RecommendResponse{
+			ID:       u.ID,
+			Username: u.Username,
+			Nickname: u.Nickname,
+			Avatar:   u.Avatar,
+			Tags:     u.Tags,
+			Reason:   reasonStr,
+			Score:    score,
+		})
+	}
+
+	// 7. 排序 (按分数倒序)
+	sort.Slice(recommendations, func(i, j int) bool {
+		return recommendations[i].Score > recommendations[j].Score
+	})
+
+	// 8. 限制返回数量 (例如 Top 10)
+	if len(recommendations) > 10 {
+		recommendations = recommendations[:10]
+	}
+
+	return recommendations, nil
+}
+
+// intersectTags 计算两个字符串切片的交集
+func intersectTags(a, b []string) []string {
+	m := make(map[string]bool)
+	var res []string
+	for _, item := range a {
+		m[item] = true
+	}
+	for _, item := range b {
+		if m[item] {
+			res = append(res, item)
+		}
+	}
+	return res
 }

@@ -41,6 +41,16 @@
             <div class="mood-tag" v-if="post.mood && post.mood !== 'Neutral'">
               {{ getMoodEmoji(post.mood) }}
             </div>
+            <el-button 
+              v-if="post.user_id === currentUserId" 
+              type="danger" 
+              link 
+              :icon="Delete" 
+              @click.stop="handleDeletePost(post)"
+              style="margin-left: 10px;"
+            >
+              删除
+            </el-button>
           </div>
 
           <div class="post-body">
@@ -80,6 +90,9 @@
                   <span class="comment-user">{{ comment.user_nickname }}</span>
                   <span class="comment-text">{{ comment.content }}</span>
                   <span class="comment-time">{{ formatTime(comment.created_at) }}</span>
+                </div>
+                <div v-if="comment.user_id === currentUserId || post.user_id === currentUserId" class="comment-actions">
+                  <el-button link type="danger" :icon="Delete" size="small" @click="handleDeleteComment(post, comment)"></el-button>
                 </div>
               </div>
             </div>
@@ -145,22 +158,27 @@
         </span>
       </template>
     </el-dialog>
-    </div>
+  </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useUserStore } from '../../store/user'
 import { ref, onMounted, reactive, computed } from 'vue'
 import GlobalNavbar from '@/components/GlobalNavbar.vue'
-import { EditPen, Star, StarFilled, ChatDotSquare, Plus } from '@element-plus/icons-vue'
-import { getMoments, createPost, toggleLike, createComment, getComments, type Post as ApiPost } from '@/api/moment'
-import { ElMessage, type UploadProps, type UploadUserFile } from 'element-plus'
+import { EditPen, Star, StarFilled, ChatDotSquare, Plus, Delete } from '@element-plus/icons-vue'
+import { getMoments, createPost, toggleLike, createComment, getComments, deletePost, deleteComment, type Post as ApiPost, type Comment } from '@/api/moment'
+import { ElMessage, ElMessageBox, type UploadProps, type UploadUserFile } from 'element-plus'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 
+
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
+
+const userStore = useUserStore()
+const currentUserId = computed(() => userStore.userInfo.id)
 
 // 扩展 Post 类型以支持 UI 状态
 interface Post extends ApiPost {
@@ -316,6 +334,53 @@ const handleComment = async (post: Post) => {
       ElMessage.error('获取评论失败')
     } finally {
       post.loadingComments = false
+    }
+  }
+}
+
+const handleDeletePost = async (post: Post) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这条动态吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    await deletePost(post.id)
+    ElMessage.success('删除成功')
+    // 从列表中移除
+    const index = posts.value.findIndex(p => p.id === post.id)
+    if (index !== -1) {
+      posts.value.splice(index, 1)
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+const handleDeleteComment = async (post: Post, comment: Comment) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这条评论吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    await deleteComment(comment.id)
+    ElMessage.success('删除成功')
+    // 从列表中移除
+    if (post.comments) {
+      const index = post.comments.findIndex(c => c.id === comment.id)
+      if (index !== -1) {
+        post.comments.splice(index, 1)
+        post.comment_count--
+      }
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
     }
   }
 }

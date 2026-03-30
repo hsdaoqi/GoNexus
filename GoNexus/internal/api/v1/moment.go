@@ -121,3 +121,39 @@ func ToggleLike(c *gin.Context) {
 		"msg":        msg,
 	})
 }
+
+// DeletePost 删除动态
+func DeletePost(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		response.FailWithMessage(c, response.ErrParamInvalid, "参数错误")
+		return
+	}
+
+	userID := c.GetUint("userID")
+	if err := service.MomentServiceApp.DeletePost(userID, uint(id)); err != nil {
+		response.FailWithMessage(c, response.ErrBusiness, "删除失败: "+err.Error())
+		return
+	}
+
+	response.Success(c, "删除成功")
+}
+
+// DeleteComment 删除评论
+func DeleteComment(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		response.FailWithMessage(c, response.ErrParamInvalid, "参数错误")
+		return
+	}
+
+	userID := c.GetUint("userID")
+	if err := service.MomentServiceApp.DeleteComment(userID, uint(id)); err != nil {
+		response.FailWithMessage(c, response.ErrBusiness, "删除失败: "+err.Error())
+		return
+	}
+
+	response.Success(c, "删除成功")
+}

@@ -103,3 +103,50 @@ func GetPendingRequests(receiverID uint) ([]dto.FriendRequestResponse, error) {
 
 	return requests, err
 }
+
+// GetFriendIDs 获取用户的所有好友ID
+func GetFriendIDs(userID uint) ([]uint, error) {
+	var ids []uint
+	err := global.DB.Model(&model.Friend{}).
+		Where("user_id = ?", userID).
+		Pluck("friend_id", &ids).Error
+	return ids, err
+}
+
+// GetSecondDegreeFriends 获取二度好友ID及其出现的次数（即共同好友数）
+// 返回 map[friendID]count
+func GetSecondDegreeFriends(myFriendIDs []uint, myUserID uint) (map[uint]int, error) {
+	if len(myFriendIDs) == 0 {
+		return nil, nil
+	}
+
+	type Result struct {
+		FriendID uint
+		Count    int
+	}
+
+	var results []Result
+	// 查找谁的好友在我的好友列表里，但不是我
+	err := global.DB.Model(&model.Friend{}).
+		Select("friend_id, count(*) as count").
+		Where("user_id IN ?", myFriendIDs).
+		Where("friend_id != ?", myUserID).
+		Group("friend_id").
+		Scan(&results).Error
+
+	candidateMap := make(map[uint]int)
+	for _, r := range results {
+		candidateMap[r.FriendID] = r.Count
+	}
+	return candidateMap, err
+}
+
+// GetUsersByIDs 批量获取用户信息
+func GetUsersByIDs(ids []uint) ([]model.User, error) {
+	var users []model.User
+	if len(ids) == 0 {
+		return users, nil
+	}
+	err := global.DB.Where("id IN ?", ids).Find(&users).Error
+	return users, err
+}

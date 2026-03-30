@@ -26,6 +26,9 @@
         <el-icon class="search-icon"><Search /></el-icon>
         <input type="text" placeholder="搜索..." class="search-input">
       </div>
+      <button class="add-btn" @click="showRecommendDialog" title="发现好友" style="background: #e67e22; margin-right: 5px;">
+        <el-icon><Compass /></el-icon>
+      </button>
       <button class="add-btn" @click="dialogVisible = true" title="添加好友">
         <el-icon><Plus /></el-icon>
       </button>
@@ -40,21 +43,25 @@
         <el-icon><ChatLineSquare /></el-icon> 群组
       </div>
     </div>
-
-    <!-- 5. 列表区域 -->
+    
+    <!-- 列表区域 -->
     <div class="menu-list">
       
-      <!-- 通知栏 -->
-      <div class="menu-title">NOTIFICATIONS</div>  
-      <div class="friend-item system-item" @click="showRequestDialog">
-        <div class="avatar-box">
-           <el-icon><Bell /></el-icon>
-           <div v-if="pendingList.length > 0" class="red-dot">{{ pendingList.length }}</div>
-        </div>
-        <div class="friend-info">
-          <div class="friend-name">系统通知 / System</div>
-          <div class="friend-sig">
-             {{ pendingList.length > 0 ? `${pendingList.length} 条申请待处理` : '暂无新消息' }}
+      <!-- 通知与推荐 -->
+      <div v-if="currentTab === 'friend'">
+        <div class="menu-title">NEW CONNECTIONS</div>
+        
+        <!-- 申请列表入口 -->
+        <div class="friend-item system-item" @click="showRequestDialog">
+          <div class="avatar-box" style="background: #ff9966; color: white;">
+             <el-icon><Bell /></el-icon>
+             <div v-if="pendingList.length > 0" class="red-dot">{{ pendingList.length > 99 ? '99+' : pendingList.length }}</div>
+          </div>
+          <div class="friend-info">
+            <div class="friend-name">New Friend</div>
+            <div class="friend-sig">
+               {{ pendingList.length > 0 ? `${pendingList.length} Friend Requests` : 'No New Requests' }}
+            </div>
           </div>
         </div>
       </div>
@@ -147,18 +154,26 @@
       </template>
     </el-dialog>
 
+    <!-- 弹窗：推荐好友 -->
+    <RecommendedFriendsDialog 
+      v-model:visible="recommendVisible"
+      :recommend-list="recommendList"
+      @add-friend="openAddDialogWithUser"
+    />
   </div>
 </template>
 
+
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
-import { Search, Plus, HomeFilled, User, Bell, Delete, ChatLineSquare } from '@element-plus/icons-vue'
+import { Search, Plus, HomeFilled, User, Bell, Delete, ChatLineSquare, Compass, UserFilled } from '@element-plus/icons-vue'
 import { useUserStore } from '../../store/user'
 import { useChatStore } from '../../store/chat'
 import { useFriendStore } from '../../store/friend'
-import { getFriendList, addFriend, getPendingRequests, handleRequest, deleteFriend } from '../../api/friend' 
+import { getFriendList, addFriend, getPendingRequests, handleRequest, deleteFriend, getRecommendedFriends } from '../../api/friend' 
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getMyGroups } from '../../api/group'
+import RecommendedFriendsDialog from '../../components/RecommendedFriendsDialog.vue'
 
 const userStore = useUserStore()
 const chatStore = useChatStore()
@@ -168,10 +183,12 @@ const friendStore = useFriendStore()
 const currentTab = ref('friend')
 const groupList = ref<any[]>([])
 const pendingList = ref<any[]>([])
+const recommendList = ref<any[]>([]) // 推荐列表
 
 // 弹窗状态
 const dialogVisible = ref(false)
 const requestVisible = ref(false)
+const recommendVisible = ref(false)
 const addForm = reactive({ id: '', msg: '' })
 
 // 初始化数据
@@ -197,6 +214,22 @@ const initData = async () => {
   } catch (e) {
     console.error("加载列表失败", e)
   }
+}
+
+const showRecommendDialog = async () => {
+    recommendVisible.value = true
+    try {
+        const res = await getRecommendedFriends()
+        recommendList.value = Array.isArray(res) ? res : []
+    } catch (e) {
+        ElMessage.error('获取推荐失败')
+    }
+}
+
+const openAddDialogWithUser = (user: any) => {
+    addForm.id = user.id.toString()
+    addForm.msg = `Hi, I saw you in recommendations!`
+    dialogVisible.value = true
 }
 
 onMounted(() => { initData() })
@@ -351,4 +384,12 @@ defineExpose({ refreshPendingList: initData, initData, openAddFriendDialog })
 .sao-btn-mini { border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-family: 'Orbitron'; color: white; }
 .sao-btn-mini.accept { background: #2ecc71; }
 .sao-btn-mini.reject { background: #e74c3c; }
+
+.sao-btn-mini.add { background: #e67e22; }
+
+/* 推荐好友样式 */
+.recommend-item-row { transition: all 0.3s; cursor: pointer; }
+.recommend-item-row:hover { background: rgba(230, 126, 34, 0.05); }
+.tag-pill { display: inline-block; background: rgba(230, 126, 34, 0.1); color: #e67e22; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px; margin-top: 4px; }
+
 </style>
