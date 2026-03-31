@@ -6,6 +6,7 @@ import (
 	"go-nexus/internal/core"
 	"go-nexus/internal/core/socket"
 	"go-nexus/internal/model"
+	"go-nexus/internal/service"
 	"go-nexus/pkg/global"
 	"go-nexus/pkg/initialize"
 )
@@ -16,6 +17,7 @@ func main() {
 	initialize.InitMySQL()
 	initialize.InitOSS()
 	core.InitAIClient()
+	service.FriendSvc = service.NewFriendService(&socket.Manager)
 	//global.DB.AutoMigrate(&model.Message{})
 	//global.DB.AutoMigrate(&model.User{})
 	//global.DB.AutoMigrate(&model.Friend{})

@@ -6,7 +6,10 @@ import (
 	"go-nexus/internal/model"
 	"go-nexus/internal/model/dto"
 	"go-nexus/internal/repository"
+	"math"
+	"sort"
 	"strings"
+	"time"
 )
 
 type MomentService struct{}
@@ -102,7 +105,12 @@ func (s *MomentService) GetMoments(userID uint, req dto.GetMomentsRequest) ([]dt
 
 		responses = append(responses, res)
 	}
-
+	// 广场模式：按热度重排
+	if req.Type == "all" {
+		sort.Slice(responses, func(i, j int) bool {
+			return MomentServiceApp.calcHotScore(posts[i]) > MomentServiceApp.calcHotScore(posts[j])
+		})
+	}
 	return responses, total, nil
 }
 
@@ -122,7 +130,7 @@ func (s *MomentService) CreateComment(userID uint, req dto.CreateCommentRequest)
 
 	// 为了返回完整的用户信息，需要重新查一下或者手动填充
 	// 这里简单起见，假设前端已经有当前用户的信息，或者我们再查一次 User
-	user, _ := repository.GetUserByID(userID)
+	user, _ := repository.UserRepo.GetByID(userID)
 
 	return dto.CommentResponse{
 		ID:           comment.ID,
@@ -200,4 +208,22 @@ func (s *MomentService) DeleteComment(userID uint, commentID uint) error {
 	}
 
 	return repository.MomentRepo.DeleteComment(comment)
+}
+
+// internal/service/moment_service.go
+
+// calcHotScore 热度分 = 互动分 / 时间衰减
+// 时间每过1小时，热度衰减一些；互动越多分越高
+func (s *MomentService) calcHotScore(post model.Post) float64 {
+	// 互动分：点赞权重1，评论权重2（评论成本更高，说明内容更好）
+	interaction := float64(post.LikeCount*1 + post.CommentCount*2)
+
+	// 时间衰减：距发布过了多少小时
+	hoursAgo := time.Since(post.CreatedAt).Hours()
+
+	// 经典公式：interaction / (hoursAgo + 2)^1.5
+	// +2 是为了防止除零，且让新内容有初始优势
+	decay := math.Pow(hoursAgo+2, 1.5)
+
+	return interaction / decay
 }

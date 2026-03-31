@@ -11,12 +11,12 @@ type GroupHandler struct{}
 
 func (h *GroupHandler) Handle(msg *dto.ProtocolMsg) error {
 	// 0. 检查是否是群成员
-	if !repository.CheckGroupMember(msg.ToUserID, msg.FromUserID) {
+	if !repository.GroupRepo.CheckMember(msg.ToUserID, msg.FromUserID) {
 		return errors.New("you are not a member of this group")
 	}
 
 	// 1. 检查是否被禁言
-	isMuted, err := repository.IsMemberMuted(msg.ToUserID, msg.FromUserID)
+	isMuted, err := repository.GroupRepo.IsMemberMuted(msg.ToUserID, msg.FromUserID)
 	if err == nil && isMuted {
 		// 发送禁言提示给发送者
 		errMsg := dto.ProtocolMsg{
@@ -35,7 +35,7 @@ func (h *GroupHandler) Handle(msg *dto.ProtocolMsg) error {
 	}
 
 	// 2. 查群成员 (ToUserID 就是 GroupID)
-	memberIDs, err := repository.GetGroupMemberIDs(msg.ToUserID)
+	memberIDs, err := repository.GroupRepo.GetMemberIDs(msg.ToUserID)
 	if err != nil {
 		return err
 	}

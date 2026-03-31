@@ -7,8 +7,12 @@ import (
 	"go-nexus/internal/repository"
 )
 
+type GroupService struct{}
+
+var GroupSrv = &GroupService{}
+
 // CreateGroup 业务逻辑
-func CreateGroup(ownerID uint, name, avatar, notice string) (*model.Group, error) {
+func (g *GroupService) Create(ownerID uint, name, avatar, notice string) (*model.Group, error) {
 	group := &model.Group{
 		Name:    name,
 		OwnerID: ownerID,
@@ -22,53 +26,53 @@ func CreateGroup(ownerID uint, name, avatar, notice string) (*model.Group, error
 		group.Avatar = "https://api.dicebear.com/7.x/identicon/svg?seed=" + name
 	}
 
-	if err := repository.CreateGroup(group); err != nil {
+	if err := repository.GroupRepo.Create(group); err != nil {
 		return nil, err
 	}
 	return group, nil
 }
 
 // GetJoinedGroups 业务逻辑
-func GetJoinedGroups(userID uint) ([]model.Group, error) {
-	return repository.GetJoinedGroups(userID)
+func (g *GroupService) GetJoinedGroups(userID uint) ([]model.Group, error) {
+	return repository.GroupRepo.GetJoinedGroups(userID)
 }
 
 // UpdateGroup 仅群主可更新群名称/头像/公告
-func UpdateGroup(ownerID, groupID uint, name, avatar, notice string) error {
-	g, err := repository.GetGroupByID(groupID)
+func (g *GroupService) Update(ownerID, groupID uint, name, avatar, notice string) error {
+	group, err := repository.GroupRepo.GetByID(groupID)
 	if err != nil {
 		return err
 	}
-	if g.OwnerID != ownerID {
+	if group.OwnerID != ownerID {
 		return errors.New("仅群主可编辑群资料")
 	}
 	// 按需更新
 	if name != "" {
-		g.Name = name
+		group.Name = name
 	}
 	if avatar != "" {
-		g.Avatar = avatar
+		group.Avatar = avatar
 	}
 	if notice != "" {
-		g.Notice = notice
+		group.Notice = notice
 	}
-	return repository.SaveGroup(g)
+	return repository.GroupRepo.Save(group)
 }
 
 // GetGroupMembers 获取群成员
-func GetGroupMembers(groupID uint) ([]dto.GroupMemberResponse, error) {
-	return repository.GetGroupMembers(groupID)
+func (g *GroupService) GetMembers(groupID uint) ([]dto.GroupMemberResponse, error) {
+	return repository.GroupRepo.GetMembers(groupID)
 }
 
 // InviteFriendToGroup 邀请好友入群
-func InviteFriendToGroup(groupID, userID, friendID uint) error {
+func (g *GroupService) InviteFriend(groupID, userID, friendID uint) error {
 	// 1. 验证是否是群成员 (只有群成员能邀请)
-	if !repository.CheckGroupMember(groupID, userID) {
+	if !repository.GroupRepo.CheckMember(groupID, userID) {
 		return errors.New("你不是该群成员，无法邀请")
 	}
 
 	// 2. 验证目标是否已经在群里
-	if repository.CheckGroupMember(groupID, friendID) {
+	if repository.GroupRepo.CheckMember(groupID, friendID) {
 		return errors.New("该用户已经在群里了")
 	}
 
@@ -78,13 +82,13 @@ func InviteFriendToGroup(groupID, userID, friendID uint) error {
 		UserID:  friendID,
 		Role:    1, // 普通成员
 	}
-	return repository.AddGroupMember(member)
+	return repository.GroupRepo.AddMember(member)
 }
 
 // KickMember 踢出群成员
-func KickMember(operatorID, groupID, targetID uint) error {
+func (g *GroupService) KickMember(operatorID, groupID, targetID uint) error {
 	// 1. 检查操作者权限
-	operatorRole, err := repository.GetMemberRole(groupID, operatorID)
+	operatorRole, err := repository.GroupRepo.GetMemberRole(groupID, operatorID)
 	if err != nil {
 		return err
 	}
@@ -94,7 +98,7 @@ func KickMember(operatorID, groupID, targetID uint) error {
 	}
 
 	// 2. 检查目标身份
-	targetRole, err := repository.GetMemberRole(groupID, targetID)
+	targetRole, err := repository.GroupRepo.GetMemberRole(groupID, targetID)
 	if err != nil {
 		return errors.New("目标成员不存在")
 	}
@@ -103,13 +107,13 @@ func KickMember(operatorID, groupID, targetID uint) error {
 		return errors.New("无法移除该成员")
 	}
 
-	return repository.RemoveGroupMember(groupID, targetID)
+	return repository.GroupRepo.RemoveMember(groupID, targetID)
 }
 
 // MuteMember 禁言/解禁
-func MuteMember(operatorID, groupID, targetID uint, muteState int) error {
+func (g *GroupService) MuteMember(operatorID, groupID, targetID uint, muteState int) error {
 	// 检查权限
-	operatorRole, err := repository.GetMemberRole(groupID, operatorID)
+	operatorRole, err := repository.GroupRepo.GetMemberRole(groupID, operatorID)
 	if err != nil {
 		return err
 	}
@@ -117,29 +121,29 @@ func MuteMember(operatorID, groupID, targetID uint, muteState int) error {
 	if operatorRole < 2 {
 		return errors.New("权限不足")
 	}
-	
+
 	// 不能禁言比自己大或平级的人
-	targetRole, err := repository.GetMemberRole(groupID, targetID)
+	targetRole, err := repository.GroupRepo.GetMemberRole(groupID, targetID)
 	if err == nil && targetRole >= operatorRole {
 		return errors.New("无法操作该成员")
 	}
 
-	return repository.UpdateMemberMuteStatus(groupID, targetID, muteState)
+	return repository.GroupRepo.UpdateMemberMuteStatus(groupID, targetID, muteState)
 }
 
 // SetGroupAdmin 设置/取消管理员
-func SetGroupAdmin(operatorID, groupID, memberID uint, isAdmin bool) error {
+func (g *GroupService) SetAdmin(operatorID, groupID, memberID uint, isAdmin bool) error {
 	// 1. 检查操作者是否是群主
-	g, err := repository.GetGroupByID(groupID)
+	group, err := repository.GroupRepo.GetByID(groupID)
 	if err != nil {
 		return err
 	}
-	if g.OwnerID != operatorID {
+	if group.OwnerID != operatorID {
 		return errors.New("仅群主可设置管理员")
 	}
 
 	// 2. 检查目标是否是群成员
-	if !repository.CheckGroupMember(groupID, memberID) {
+	if !repository.GroupRepo.CheckMember(groupID, memberID) {
 		return errors.New("目标不是群成员")
 	}
 
@@ -149,22 +153,22 @@ func SetGroupAdmin(operatorID, groupID, memberID uint, isAdmin bool) error {
 	if isAdmin {
 		role = 2
 	}
-	return repository.UpdateMemberRole(groupID, memberID, role)
+	return repository.GroupRepo.UpdateMemberRole(groupID, memberID, role)
 }
 
 // TransferGroupOwner 转让群主
-func TransferGroupOwner(operatorID, groupID, newOwnerID uint) error {
+func (g *GroupService) TransferOwner(operatorID, groupID, newOwnerID uint) error {
 	// 1. 检查操作者是否是群主
-	g, err := repository.GetGroupByID(groupID)
+	group, err := repository.GroupRepo.GetByID(groupID)
 	if err != nil {
 		return err
 	}
-	if g.OwnerID != operatorID {
+	if group.OwnerID != operatorID {
 		return errors.New("仅群主可转让群")
 	}
 
 	// 2. 检查新群主是否是群成员
-	if !repository.CheckGroupMember(groupID, newOwnerID) {
+	if !repository.GroupRepo.CheckMember(groupID, newOwnerID) {
 		return errors.New("目标不是群成员")
 	}
 
@@ -173,5 +177,5 @@ func TransferGroupOwner(operatorID, groupID, newOwnerID uint) error {
 	}
 
 	// 3. 执行转让事务
-	return repository.TransferGroupOwner(groupID, operatorID, newOwnerID)
+	return repository.GroupRepo.TransferGroupOwner(groupID, operatorID, newOwnerID)
 }

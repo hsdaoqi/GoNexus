@@ -8,8 +8,12 @@ import (
 	"gorm.io/gorm"
 )
 
+type GroupRepository struct{}
+
+var GroupRepo = &GroupRepository{}
+
 // CreateGroup 创建群组 (事务：建群 + 加群主)
-func CreateGroup(group *model.Group) error {
+func (g *GroupRepository) Create(group *model.Group) error {
 	return global.DB.Transaction(func(tx *gorm.DB) error {
 		// 1. 创建群组基本信息
 		if err := tx.Create(group).Error; err != nil {
@@ -31,7 +35,7 @@ func CreateGroup(group *model.Group) error {
 }
 
 // GetJoinedGroups 获取我加入的群列表 (用于 SidePanel 展示)
-func GetJoinedGroups(userID uint) ([]model.Group, error) {
+func (g *GroupRepository) GetJoinedGroups(userID uint) ([]model.Group, error) {
 	var groups []model.Group
 	// 联表查询：从 group_members 表反查 groups 表
 	// 使用表别名 g / gm，避免 MySQL 对保留字 `groups` 解析出错
@@ -55,21 +59,21 @@ func GetJoinedGroups(userID uint) ([]model.Group, error) {
 }
 
 // GetGroupByID 查询群
-func GetGroupByID(id uint) (*model.Group, error) {
-	var g model.Group
-	if err := global.DB.First(&g, id).Error; err != nil {
+func (g *GroupRepository) GetByID(id uint) (*model.Group, error) {
+	var group model.Group
+	if err := global.DB.First(&group, id).Error; err != nil {
 		return nil, err
 	}
-	return &g, nil
+	return &group, nil
 }
 
 // SaveGroup 保存群信息
-func SaveGroup(g *model.Group) error {
-	return global.DB.Save(g).Error
+func (g *GroupRepository) Save(group *model.Group) error {
+	return global.DB.Save(group).Error
 }
 
 // GetGroupMembers 获取群成员列表
-func GetGroupMembers(groupID uint) ([]dto.GroupMemberResponse, error) {
+func (g *GroupRepository) GetMembers(groupID uint) ([]dto.GroupMemberResponse, error) {
 	var members []dto.GroupMemberResponse
 	// 联表查询获取用户头像和昵称
 	err := global.DB.Table("group_members").
@@ -81,19 +85,19 @@ func GetGroupMembers(groupID uint) ([]dto.GroupMemberResponse, error) {
 }
 
 // AddGroupMember 添加群成员
-func AddGroupMember(member *model.GroupMember) error {
+func (g *GroupRepository) AddMember(member *model.GroupMember) error {
 	return global.DB.Create(member).Error
 }
 
 // CheckGroupMember 检查是否已经是成员
-func CheckGroupMember(groupID, userID uint) bool {
+func (g *GroupRepository) CheckMember(groupID, userID uint) bool {
 	var count int64
 	global.DB.Model(&model.GroupMember{}).Where("group_id = ? AND user_id = ?", groupID, userID).Count(&count)
 	return count > 0
 }
 
 // GetGroupMemberIDs 获取群成员的用户ID列表
-func GetGroupMemberIDs(groupID uint) ([]uint, error) {
+func (g *GroupRepository) GetMemberIDs(groupID uint) ([]uint, error) {
 	var ids []uint
 	err := global.DB.Model(&model.GroupMember{}).
 		Where("group_id = ?", groupID).
@@ -102,20 +106,20 @@ func GetGroupMemberIDs(groupID uint) ([]uint, error) {
 }
 
 // RemoveGroupMember 移除成员
-func RemoveGroupMember(groupID, userID uint) error {
+func (g *GroupRepository) RemoveMember(groupID, userID uint) error {
 	// Unscoped 硬删除，彻底移除
 	return global.DB.Unscoped().Where("group_id = ? AND user_id = ?", groupID, userID).Delete(&model.GroupMember{}).Error
 }
 
 // UpdateMemberMuteStatus 更新禁言状态
-func UpdateMemberMuteStatus(groupID, userID uint, muted int) error {
+func (g *GroupRepository) UpdateMemberMuteStatus(groupID, userID uint, muted int) error {
 	return global.DB.Model(&model.GroupMember{}).
 		Where("group_id = ? AND user_id = ?", groupID, userID).
 		Update("muted", muted).Error
 }
 
 // GetMemberRole 获取成员角色
-func GetMemberRole(groupID, userID uint) (int, error) {
+func (g *GroupRepository) GetMemberRole(groupID, userID uint) (int, error) {
 	var member model.GroupMember
 	err := global.DB.Select("role").
 		Where("group_id = ? AND user_id = ?", groupID, userID).
@@ -124,7 +128,7 @@ func GetMemberRole(groupID, userID uint) (int, error) {
 }
 
 // IsMemberMuted 检查成员是否被禁言
-func IsMemberMuted(groupID, userID uint) (bool, error) {
+func (g *GroupRepository) IsMemberMuted(groupID, userID uint) (bool, error) {
 	var member model.GroupMember
 	err := global.DB.Select("muted").
 		Where("group_id = ? AND user_id = ?", groupID, userID).
@@ -136,28 +140,28 @@ func IsMemberMuted(groupID, userID uint) (bool, error) {
 }
 
 // IncrementGroupUnread 增加群未读数
-func IncrementGroupUnread(groupID, senderID uint) error {
+func (g *GroupRepository) IncrementGroupUnread(groupID, senderID uint) error {
 	return global.DB.Model(&model.GroupMember{}).
 		Where("group_id = ? AND user_id != ?", groupID, senderID).
 		UpdateColumn("unread_count", gorm.Expr("unread_count + ?", 1)).Error
 }
 
 // ClearGroupUnread 清除群未读数
-func ClearGroupUnread(userID, groupID uint) error {
+func (g *GroupRepository) ClearUnread(userID, groupID uint) error {
 	return global.DB.Model(&model.GroupMember{}).
 		Where("group_id = ? AND user_id = ?", groupID, userID).
 		Update("unread_count", 0).Error
 }
 
 // UpdateMemberRole 更新成员角色
-func UpdateMemberRole(groupID, userID uint, role int) error {
+func (g *GroupRepository) UpdateMemberRole(groupID, userID uint, role int) error {
 	return global.DB.Model(&model.GroupMember{}).
 		Where("group_id = ? AND user_id = ?", groupID, userID).
 		Update("role", role).Error
 }
 
 // TransferGroupOwner 转让群主 (事务)
-func TransferGroupOwner(groupID, oldOwnerID, newOwnerID uint) error {
+func (g *GroupRepository) TransferGroupOwner(groupID, oldOwnerID, newOwnerID uint) error {
 	return global.DB.Transaction(func(tx *gorm.DB) error {
 		// 1. 更新群表 owner_id
 		if err := tx.Model(&model.Group{}).Where("id = ?", groupID).Update("owner_id", newOwnerID).Error; err != nil {

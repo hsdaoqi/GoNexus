@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"go-nexus/internal/model"
 	"go-nexus/internal/model/vo"
 	"go-nexus/internal/repository"
@@ -12,68 +11,64 @@ import (
 	"gorm.io/gorm"
 )
 
-// Register 注册业务
-func Register(username, password string) error {
-	//1.检查用户名是否已存在
-	_, err := repository.GetUserByUsername(username)
-	if err == nil { //没报错说明用户存在
-		return fmt.Errorf("user_exist") // 使用特定错误标识
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return fmt.Errorf("db_error: %w", err) // 数据库错误
+// 在 service 层定义错误类型，Controller 直接用，不用解析字符串
+var (
+	ErrUserExist    = errors.New("该用户名已被注册")
+	ErrUserNotFound = errors.New("用户不存在")
+	ErrWrongPwd     = errors.New("密码错误")
+	ErrTokenFailed  = errors.New("token生成失败")
+)
+
+type UserService struct{}
+
+var UserSvc = &UserService{}
+
+func (s *UserService) Register(username, password string) error {
+	_, err := repository.UserRepo.GetByUsername(username)
+	if err == nil {
+		return ErrUserExist // 直接返回有类型的错误
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err // 数据库错误直接往上抛，不包装字符串
 	}
 
-	//2，密码加密
-	password, err = utils.HashPassword(password)
+	hashed, err := utils.HashPassword(password)
 	if err != nil {
 		return err
 	}
-
-	//3.创建用户
-	user := &model.User{
+	return repository.UserRepo.Create(&model.User{
 		Username:      username,
-		Password:      password,
-		Nickname:      username, //昵称默认为用户名
+		Password:      hashed,
+		Nickname:      username,
 		LastLoginTime: time.Now(),
 		Birthday:      time.Now(),
-	}
-
-	//4.存库
-	return repository.CreateUser(user)
+	})
 }
 
-// Login 用户登录
-func Login(username, password string) (*model.User, string, error) {
-	//根据用户名找到用户
-	user, err := repository.GetUserByUsername(username)
+func (s *UserService) Login(username, password string) (*model.User, string, error) {
+	user, err := repository.UserRepo.GetByUsername(username)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, "", errors.New("用户不存在,请检查用户名是否正确")
+		return nil, "", ErrUserNotFound
 	}
 	if err != nil {
 		return nil, "", err
 	}
-	//2.校验密码
 	if !utils.CheckPassword(password, user.Password) {
-		return nil, "", errors.New("密码错误")
+		return nil, "", ErrWrongPwd
 	}
-	//3.生成token
 	token, err := utils.GenToken(user.ID, user.Username)
 	if err != nil {
-		return nil, "", errors.New("token生成失败")
+		return nil, "", ErrTokenFailed
 	}
 	return user, token, nil
 }
 
-// GetUserInfo 获取个人信息服务
-func GetUserInfo(userID uint) (*model.UserProfileResponse, error) {
-	// 1. 调库查数据
-	user, err := repository.GetUserByID(userID)
+func (s *UserService) GetUserInfo(userID uint) (*model.UserProfileResponse, error) {
+	user, err := repository.UserRepo.GetByID(userID)
 	if err != nil {
 		return nil, err
 	}
-
-	// 2. 数据清洗 (Model -> DTO)
-	// 这一步非常关键！我们不返回 user.Password
-	resp := &model.UserProfileResponse{
+	return &model.UserProfileResponse{
 		ID:            user.ID,
 		Username:      user.Username,
 		Nickname:      user.Nickname,
@@ -85,27 +80,30 @@ func GetUserInfo(userID uint) (*model.UserProfileResponse, error) {
 		Signature:     user.Signature,
 		Birthday:      user.Birthday,
 		Location:      user.Location,
-	}
-	return resp, nil
+	}, nil
 }
 
-func UpdateUserInfo(userinfo vo.UpdateUser, userID uint) error {
-	user, err := repository.GetUserByID(userID)
+func (s *UserService) UpdateUserInfo(info vo.UpdateUser, userID uint) error {
+	user, err := repository.UserRepo.GetByID(userID)
 	if err != nil {
 		return err
 	}
-	user.Nickname = userinfo.Nickname
-	user.Email = userinfo.Email
-	user.Gender = userinfo.Gender
-	user.Birthday = userinfo.Birthday
-	user.Signature = userinfo.Signature
-	user.Location = userinfo.Location
-	if userinfo.Avatar != "" {
-		user.Avatar = userinfo.Avatar
+	user.Nickname = info.Nickname
+	user.Email = info.Email
+	user.Gender = info.Gender
+	user.Birthday = info.Birthday
+	user.Signature = info.Signature
+	user.Location = info.Location
+	if info.Avatar != "" {
+		user.Avatar = info.Avatar
 	}
-	err = repository.SaveUser(user)
+	return repository.UserRepo.Save(user)
+}
+func (s *UserService) UpdateAvatar(userID uint, avatar string) error {
+	user, err := repository.UserRepo.GetByID(userID)
 	if err != nil {
 		return err
 	}
-	return nil
+	user.Avatar = avatar
+	return repository.UserRepo.Save(user)
 }

@@ -47,7 +47,7 @@ func CreateGroup(c *gin.Context) {
 	}
 
 	userID := c.MustGet("userID").(uint)
-	group, err := service.CreateGroup(userID, req.Name, req.Avatar, req.Notice)
+	group, err := service.GroupSrv.Create(userID, req.Name, req.Avatar, req.Notice)
 	if err != nil {
 		response.FailWithMessage(c, response.ErrSystemError, err.Error())
 		return
@@ -58,7 +58,7 @@ func CreateGroup(c *gin.Context) {
 // GetMyGroups 接口
 func GetMyGroups(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
-	list, err := service.GetJoinedGroups(userID)
+	list, err := service.GroupSrv.GetJoinedGroups(userID)
 	if err != nil {
 		response.FailWithMessage(c, response.ErrSystemError, err.Error())
 		return
@@ -74,7 +74,7 @@ func UpdateGroup(c *gin.Context) {
 		return
 	}
 	userID := c.MustGet("userID").(uint)
-	if err := service.UpdateGroup(userID, req.ID, req.Name, req.Avatar, req.Notice); err != nil {
+	if err := service.GroupSrv.Update(userID, req.ID, req.Name, req.Avatar, req.Notice); err != nil {
 		response.FailWithMessage(c, response.ErrSystemError, err.Error())
 		return
 	}
@@ -89,7 +89,7 @@ func GetGroupMembers(c *gin.Context) {
 		response.Fail(c, response.ErrParamInvalid)
 		return
 	}
-	members, err := service.GetGroupMembers(uint(groupID))
+	members, err := service.GroupSrv.GetMembers(uint(groupID))
 	if err != nil {
 		response.FailWithMessage(c, response.ErrSystemError, err.Error())
 		return
@@ -105,7 +105,7 @@ func InviteMember(c *gin.Context) {
 		return
 	}
 	userID := c.MustGet("userID").(uint)
-	if err := service.InviteFriendToGroup(req.GroupID, userID, req.FriendID); err != nil {
+	if err := service.GroupSrv.InviteFriend(req.GroupID, userID, req.FriendID); err != nil {
 		response.FailWithMessage(c, response.ErrSystemError, err.Error())
 		return
 	}
@@ -120,7 +120,7 @@ func KickMember(c *gin.Context) {
 		return
 	}
 	userID := c.MustGet("userID").(uint)
-	if err := service.KickMember(userID, req.GroupID, req.MemberID); err != nil {
+	if err := service.GroupSrv.KickMember(userID, req.GroupID, req.MemberID); err != nil {
 		response.FailWithMessage(c, response.ErrSystemError, err.Error())
 		return
 	}
@@ -135,7 +135,7 @@ func MuteMember(c *gin.Context) {
 		return
 	}
 	userID := c.MustGet("userID").(uint)
-	if err := service.MuteMember(userID, req.GroupID, req.MemberID, req.Mute); err != nil {
+	if err := service.GroupSrv.MuteMember(userID, req.GroupID, req.MemberID, req.Mute); err != nil {
 		response.FailWithMessage(c, response.ErrSystemError, err.Error())
 		return
 	}
@@ -161,7 +161,7 @@ func SetAdmin(c *gin.Context) {
 		return
 	}
 	userID := c.MustGet("userID").(uint)
-	if err := service.SetGroupAdmin(userID, req.GroupID, req.MemberID, req.IsAdmin); err != nil {
+	if err := service.GroupSrv.SetAdmin(userID, req.GroupID, req.MemberID, req.IsAdmin); err != nil {
 		response.FailWithMessage(c, response.ErrSystemError, err.Error())
 		return
 	}
@@ -176,7 +176,7 @@ func TransferGroup(c *gin.Context) {
 		return
 	}
 	userID := c.MustGet("userID").(uint)
-	if err := service.TransferGroupOwner(userID, req.GroupID, req.MemberID); err != nil {
+	if err := service.GroupSrv.TransferOwner(userID, req.GroupID, req.MemberID); err != nil {
 		response.FailWithMessage(c, response.ErrSystemError, err.Error())
 		return
 	}

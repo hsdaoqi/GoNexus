@@ -23,15 +23,15 @@ func SaveMessage(proto *dto.ProtocolMsg) error {
 		Url:        proto.Url,
 	}
 	// 2. 落库
-	if err := repository.SaveMessage(dbMsg); err != nil {
+	if err := repository.MessageRepo.Save(dbMsg); err != nil {
 		return err
 	}
 
 	// 2.5 增加未读数
 	if proto.ChatType == dto.ChatTypePrivate {
-		repository.IncrementFriendUnread(proto.ToUserID, proto.FromUserID)
+		repository.FriendRepo.IncrementUnread(proto.ToUserID, proto.FromUserID)
 	} else if proto.ChatType == dto.ChatTypeGroup {
-		repository.IncrementGroupUnread(proto.ToUserID, proto.FromUserID)
+		repository.GroupRepo.IncrementGroupUnread(proto.ToUserID, proto.FromUserID)
 	}
 
 	// 3. 补充 DTO 信息 (准备发送)
@@ -41,7 +41,7 @@ func SaveMessage(proto *dto.ProtocolMsg) error {
 	proto.MsgID = dbMsg.ID
 
 	// 填充发送者信息 (查询用户信息)
-	user, err := repository.GetUserByID(proto.FromUserID)
+	user, err := repository.UserRepo.GetByID(proto.FromUserID)
 	if err == nil {
 		proto.SenderNickname = user.Nickname
 		proto.SenderAvatar = user.Avatar
@@ -60,9 +60,9 @@ func SaveMessage(proto *dto.ProtocolMsg) error {
 // ReadMessage 标记消息为已读
 func ReadMessage(userID uint, targetID uint, chatType int) error {
 	if chatType == dto.ChatTypePrivate {
-		return repository.ClearFriendUnread(userID, targetID)
+		return repository.FriendRepo.ClearUnread(userID, targetID)
 	} else if chatType == dto.ChatTypeGroup {
-		return repository.ClearGroupUnread(userID, targetID)
+		return repository.GroupRepo.ClearUnread(userID, targetID)
 	}
 	return nil
 }

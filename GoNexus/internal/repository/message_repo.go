@@ -6,14 +6,18 @@ import (
 	"go-nexus/pkg/global"
 )
 
+type messageRepo struct{}
+
+var MessageRepo = &messageRepo{}
+
 // SaveMessage 保存信息
-func SaveMessage(msg *model.Message) error {
+func (m *messageRepo) Save(msg *model.Message) error {
 	return global.DB.Create(msg).Error
 }
 
 // GetChatHistory 获取单聊历史记录
 // 参数：uid(我), targetID(对方), offset(偏移量), limit(条数)
-func GetChatHistory(uid, targetID uint, offset, limit int) ([]model.Message, error) {
+func (m *messageRepo) GetChatHistory(uid, targetID uint, offset, limit int) ([]model.Message, error) {
 	var message []model.Message
 
 	// SQL: SELECT * FROM messages
@@ -28,7 +32,7 @@ func GetChatHistory(uid, targetID uint, offset, limit int) ([]model.Message, err
 		Find(&message).Error
 	return message, err
 }
-func GetChatHistoryWithUserInfo(uid, targetID uint, offset, limit int) ([]dto.ChatHistoryResponse, error) {
+func (m *messageRepo) GetChatHistoryWithUserInfo(uid, targetID uint, offset, limit int) ([]dto.ChatHistoryResponse, error) {
 	var messages []dto.ChatHistoryResponse
 
 	// 联表查询：messages 表 JOIN users 表
@@ -46,7 +50,7 @@ func GetChatHistoryWithUserInfo(uid, targetID uint, offset, limit int) ([]dto.Ch
 }
 
 // GetGroupChatHistoryWithUserInfo 获取群聊历史记录（带用户信息）
-func GetGroupChatHistoryWithUserInfo(uid, groupID uint, offset, limit int) ([]dto.ChatHistoryResponse, error) {
+func (m *messageRepo) GetGroupChatHistoryWithUserInfo(uid, groupID uint, offset, limit int) ([]dto.ChatHistoryResponse, error) {
 	var messages []dto.ChatHistoryResponse
 
 	err := global.DB.Table("messages").

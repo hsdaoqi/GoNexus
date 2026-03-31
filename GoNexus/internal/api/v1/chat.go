@@ -52,9 +52,9 @@ func GetChatHistory(c *gin.Context) {
 
 	// 根据聊天类型选择不同的查询逻辑
 	if req.ChatType == dto.ChatTypeGroup {
-		messages, err = repository.GetGroupChatHistoryWithUserInfo(userID, req.TargetID, offset, req.PageSize)
+		messages, err = repository.MessageRepo.GetGroupChatHistoryWithUserInfo(userID, req.TargetID, offset, req.PageSize)
 	} else {
-		messages, err = repository.GetChatHistoryWithUserInfo(userID, req.TargetID, offset, req.PageSize)
+		messages, err = repository.MessageRepo.GetChatHistoryWithUserInfo(userID, req.TargetID, offset, req.PageSize)
 	}
 	if err != nil {
 		response.FailWithMessage(c, response.ErrSystemError, err.Error())
@@ -100,7 +100,7 @@ func RevokeMessage(c *gin.Context) {
 	// 3. 广播通知
 	if req.ChatType == 2 {
 		// 群聊：查出所有群成员并推送
-		memberIDs, _ := repository.GetGroupMemberIDs(req.TargetID)
+		memberIDs, _ := repository.GroupRepo.GetMemberIDs(req.TargetID)
 		for _, mid := range memberIDs {
 			socket.Manager.SendMessage(mid, notifyMsg.ToBytes())
 		}

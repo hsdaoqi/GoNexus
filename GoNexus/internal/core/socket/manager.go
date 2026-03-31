@@ -102,7 +102,7 @@ func (manager *ClientManager) IsUserOnline(userID uint) bool {
 // status: 1-上线 0-下线
 func (manager *ClientManager) BroadcastStatus(userID uint, status int) {
 	// 1. 获取该用户的所有好友
-	friends, err := repository.GetFriendList(userID)
+	friends, err := repository.FriendRepo.GetList(userID)
 	if err != nil {
 		return
 	}

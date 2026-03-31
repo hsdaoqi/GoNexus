@@ -75,9 +75,9 @@ func ChatSummary(c *gin.Context) {
 	var err error
 
 	if req.ChatType == model.ChatTypeGroup {
-		messages, err = repository.GetGroupChatHistoryWithUserInfo(userID, req.TargetID, 0, limit)
+		messages, err = repository.MessageRepo.GetGroupChatHistoryWithUserInfo(userID, req.TargetID, 0, limit)
 	} else {
-		messages, err = repository.GetChatHistoryWithUserInfo(userID, req.TargetID, 0, limit)
+		messages, err = repository.MessageRepo.GetChatHistoryWithUserInfo(userID, req.TargetID, 0, limit)
 	}
 
 	if err != nil {
@@ -134,7 +134,7 @@ func ReplySuggestion(c *gin.Context) {
 	userID := c.MustGet("userID").(uint)
 
 	// 获取我的信息 (为了告诉 AI 我是谁)
-	me, err := repository.GetUserByID(userID)
+	me, err := repository.UserRepo.GetByID(userID)
 	if err != nil {
 		response.FailWithMessage(c, response.ErrSystemError, "获取用户信息失败")
 		return
@@ -145,9 +145,9 @@ func ReplySuggestion(c *gin.Context) {
 	var messages []dto.ChatHistoryResponse
 
 	if req.ChatType == model.ChatTypeGroup {
-		messages, err = repository.GetGroupChatHistoryWithUserInfo(userID, req.TargetID, 0, limit)
+		messages, err = repository.MessageRepo.GetGroupChatHistoryWithUserInfo(userID, req.TargetID, 0, limit)
 	} else {
-		messages, err = repository.GetChatHistoryWithUserInfo(userID, req.TargetID, 0, limit)
+		messages, err = repository.MessageRepo.GetChatHistoryWithUserInfo(userID, req.TargetID, 0, limit)
 	}
 
 	if err != nil {
